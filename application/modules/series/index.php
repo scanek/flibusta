@@ -31,41 +31,32 @@ if ($get != '') {
 	unset($_SESSION['series_letter']);
 }
 
-echo "<ul class='pagination'>";
+echo "<div class='search-filter-card mb-4'>";
+echo "<ul class='pagination pagination-sm flex-wrap gap-1 mb-2 justify-content-center'>";
 	foreach (range(chr(0xC0), chr(0xDF)) as $b) {
 		$l = iconv('CP1251', 'UTF-8', $b);
-		if ($l == mb_strtoupper($get)) {
-			$cc = 'active';
-		} else {
-			$cc = '';
-		}
-		echo "<li class='page-item $cc'><a class='page-link' href='$webroot/series/?letter=" . urlencode($l) . "'>$l</a></li>";
+		$cc = ($l == mb_strtoupper($get)) ? 'active fw-bold' : '';
+		echo "<li class='page-item $cc'><a class='page-link rounded-pill px-2' href='$webroot/series/?letter=" . urlencode($l) . "'>$l</a></li>";
 	}
 echo "</ul>";
-echo "<ul class='pagination'>";
+echo "<ul class='pagination pagination-sm flex-wrap gap-1 mb-3 justify-content-center'>";
 	foreach (range('A', 'Z') as $b) {
 		$l = iconv('CP1251', 'UTF-8', $b);
-		if ($l == mb_strtoupper($get)) {
-			$cc = 'active';
-		} else {
-			$cc = '';
-		}
-		echo "<li class='page-item $cc'><a class='page-link' href='$webroot/series/?letter=" . urlencode($l) . "'>$l</a></li>";
+		$cc = ($l == mb_strtoupper($get)) ? 'active fw-bold' : '';
+		echo "<li class='page-item $cc'><a class='page-link rounded-pill px-2' href='$webroot/series/?letter=" . urlencode($l) . "'>$l</a></li>";
 	}
-
 echo "</ul>";
 
-
-echo "<form action='$webroot/series/'>\n";
+echo "<form action='$webroot/series/' method='GET'>\n";
 ?>
-<div class="input-group mb-3">
-  <input name="q" type="text" class="form-control" placeholder="Поиск серии" aria-label="Поиск серии" aria-describedby="basic-addon2">
-  <div class="input-group-append">
-
-    <input type='submit' class="btn btn-outline-secondary" value='Поиск' type="button">
-  </div>
+<div class="search-input-group">
+  <i class="fas fa-search text-muted ms-2 me-2"></i>
+  <input name="q" type="text" class="form-control" placeholder="Поиск серии по названию..." value="<?php echo htmlspecialchars($get); ?>">
+  <?php if (!empty($get)) { echo "<a href='$webroot/series/' class='btn btn-sm btn-link text-muted' title='Сбросить'><i class='fas fa-times'></i></a>"; } ?>
+  <button type='submit' class="btn btn-primary rounded-pill px-4 ms-2">Найти</button>
 </div>
 </form>
+</div>
 
 <?php
 $start = SERIES_PAGE * $page;
@@ -83,11 +74,21 @@ $stmt = $dbh->prepare("SELECT SeqName, SeqId,
 $stmt->bindParam(":letter", $letter);
 $stmt->execute();
 
-echo '<div class="row">';
+echo "<div class='d-flex justify-content-between align-items-center mb-3'>";
+echo "<span class='badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2'><i class='fas fa-layer-group me-1'></i> Найдено серий: " . number_format($cnt, 0, '.', ' ') . "</span>";
+echo "</div>";
+
 show_gpager(ceil($cnt / SERIES_PAGE), 5);
+echo '<div class="row g-3">';
 while ($bs = $stmt->fetch()) {
 	if ($bs->cnt > 0) {
-		echo "<div class='col col-sm-6 mb-3 d-flex justify-content-between'><a class='mw-100 text-dark' href='$webroot/?sid=$bs->seqid'>$bs->seqname</a><span class='badge bg-secondary'>$bs->cnt</span></div>";
+		echo "<div class='col-sm-6 col-lg-4'>";
+		echo "<div class='card border-0 shadow-sm rounded-3 p-2 h-100 d-flex flex-row align-items-center justify-content-between'>";
+		echo "<a class='text-decoration-none text-body fw-medium text-truncate me-2' href='$webroot/?sid=$bs->seqid' title='" . htmlspecialchars($bs->seqname) . "'>";
+		echo "<i class='fas fa-bookmark me-2 text-danger opacity-75'></i>" . htmlspecialchars($bs->seqname) . "</a>";
+		echo "<span class='badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-auto'>$bs->cnt</span>";
+		echo "</div>";
+		echo "</div>";
 	}
 }
 echo "</div>";

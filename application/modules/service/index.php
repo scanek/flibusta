@@ -10,11 +10,13 @@ if (!empty($service_password)) {
 	}
 }
 ?>
-<div class='row'>
-<div class="col-sm-6">
-<div class='card'>
-<h4 class="rounded-top p-1" style="background: #d0d0d0;">Статистика</h4>
-<div class='card-body'>
+<div class='row g-4'>
+<div class="col-md-6">
+<div class='card border-0 shadow-sm rounded-4 h-100'>
+<div class='card-header bg-transparent border-bottom py-3'>
+<h5 class='fw-bold mb-0'><i class='fas fa-chart-pie text-primary me-2'></i> Статистика библиотеки</h5>
+</div>
+<div class='card-body p-4'>
 <?php
 $status_file = '/application/sql/status';
 $pid_file = '/application/sql/sync.pid';
@@ -59,24 +61,27 @@ if (!$status_import) {
 	$qtotal = $dbh->query("SELECT (SELECT MAX(time) FROM libbook) mmod, (SELECT COUNT(*) FROM libbook) bcnt, (SELECT COUNT(*) FROM libbook WHERE deleted='0') bdcnt");
 	$qtotal->execute();
 	$total = $qtotal->fetch();
-	echo "<table class='table'><tbody>";
-	echo "<tr><td>Актуальность базы:</td><td>$total->mmod</td></tr>";
-	echo "<tr><td>Всего произведений:</td><td>$total->bcnt</td></tr>";
-	echo "<tr><td>Размер архива:</td><td>$books_size Gb</td></tr>";
-	echo "<tr><td>Размер кэша:</td><td>$cache_size Mb</td></tr>";
+	echo "<table class='table table-borderless align-middle mb-0'><tbody>";
+	echo "<tr><td class='text-muted ps-0'>Актуальность базы:</td><td class='fw-bold text-end pe-0'>" . (!empty($total->mmod) ? $total->mmod : '—') . "</td></tr>";
+	echo "<tr><td class='text-muted ps-0'>Всего произведений:</td><td class='fw-bold text-end pe-0'>" . number_format($total->bcnt ?? 0, 0, '.', ' ') . "</td></tr>";
+	echo "<tr><td class='text-muted ps-0'>Доступно активных:</td><td class='fw-bold text-end pe-0 text-success'>" . number_format($total->bdcnt ?? 0, 0, '.', ' ') . "</td></tr>";
+	echo "<tr><td class='text-muted ps-0'>Размер архива книг:</td><td class='fw-bold text-end pe-0'>$books_size Gb</td></tr>";
+	echo "<tr><td class='text-muted ps-0'>Размер кэша:</td><td class='fw-bold text-end pe-0'>$cache_size Mb</td></tr>";
 	echo "</tbody></table>";
 } else {
-	echo "<div class='text-primary fw-bold'><div class='spinner-border spinner-border-sm me-2' role='status'></div>Идёт процесс импорта или синхронизации...</div>";
+	echo "<div class='text-primary fw-bold p-3'><div class='spinner-border spinner-border-sm me-2' role='status'></div>Идёт процесс импорта или синхронизации...</div>";
 }
 ?>
 </div>
 </div>
 </div>
 
-<div class="col-sm-6">
-<div class='card'>
-<h4 class="rounded-top p-1" style="background: #d0d0d0;">Операции</h4>
-<div class='card-body'>
+<div class="col-md-6">
+<div class='card border-0 shadow-sm rounded-4 h-100'>
+<div class='card-header bg-transparent border-bottom py-3'>
+<h5 class='fw-bold mb-0'><i class='fas fa-wrench text-primary me-2'></i> Операции и обслуживание</h5>
+</div>
+<div class='card-body p-4'>
 <?php
 
 
@@ -107,10 +112,10 @@ if ($status_import) {
 } else {
 	$status = '';
 }
-echo "<div class='d-flex justify-content-between'>";
-echo "<a class='btn btn-primary m-1 $status' href='?import=sql'>Обновить базу</a> ";
-echo "<a class='btn btn-warning m-1' href='?empty=cache'>Очистить кэш</a> ";
-echo "<a class='btn btn-warning m-1 $status' href='?reindex'>Сканирование ZIP</a> ";
+echo "<div class='d-flex flex-wrap gap-2'>";
+echo "<a class='btn btn-primary rounded-pill px-4 $status' href='?import=sql'><i class='fas fa-sync-alt me-2'></i> Обновить базу</a> ";
+echo "<a class='btn btn-outline-warning rounded-pill px-3' href='?empty=cache' onclick='return confirm(\"Очистить кэш обложек и картинок?\")'><i class='fas fa-trash-alt me-1'></i> Очистить кэш</a> ";
+echo "<a class='btn btn-outline-secondary rounded-pill px-3 $status' href='?reindex'><i class='fas fa-file-archive me-1'></i> Сканирование ZIP</a> ";
 echo "</div>";
 
 if ($status_import) {
@@ -118,7 +123,7 @@ if ($status_import) {
 	if (empty($op)) {
 		$op = 'Идёт обработка данных (скачивание или импорт)...';
 	}
-	echo "<div class='alert alert-info d-flex align-items-center mt-3 mb-2'>";
+	echo "<div class='alert alert-info d-flex align-items-center rounded-3 mt-3 mb-2'>";
 	echo "<div class='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></div>";
 	echo "<div><strong>Текущее действие:</strong> " . nl2br(htmlspecialchars($op)) . "</div>";
 	echo "</div>";
@@ -127,13 +132,13 @@ if ($status_import) {
 		$log_tail = shell_exec('tail -n 10 /application/sql/sync.log 2>/dev/null');
 		if (!empty($log_tail)) {
 			echo "<div class='mt-2'><small class='text-muted fw-bold'>Лог выполнения (последние строки):</small>";
-			echo "<pre class='bg-dark text-light p-2 rounded' style='font-size: 11px; max-height: 160px; overflow-y: auto; white-space: pre-wrap;'>" . htmlspecialchars($log_tail) . "</pre></div>";
+			echo "<pre class='bg-dark text-light p-3 rounded-3' style='font-size: 11px; max-height: 180px; overflow-y: auto; white-space: pre-wrap;'>" . htmlspecialchars($log_tail) . "</pre></div>";
 		}
 	}
 	header("Refresh:3");
 } else if (file_exists('/application/sql/sync.log') && file_exists($status_file) && trim(file_get_contents($status_file)) === '') {
 	if (time() - filemtime($status_file) < 120) {
-		echo "<div class='alert alert-success mt-3'>Обновление базы успешно завершено!</div>";
+		echo "<div class='alert alert-success rounded-3 mt-3'><i class='fas fa-check-circle me-2'></i> Обновление базы успешно завершено!</div>";
 	}
 }
 
@@ -144,18 +149,18 @@ if ($status_import) {
 
 </div>
 
-<div class='row'>
-<div class="col-sm-12 mt-3">
-<div class='card'>
-<div class='card-body'>
-<p>
-Для выполнения обновления необходимо разместить фалы дампа Флибусты (*.sql) в каталог FlibustaSQL. Процесс занимает до 30 минут, в зависимости от быстродействия сервера (SSD значительно увеличивает скорость импорта)
+<div class='row mt-4'>
+<div class="col-sm-12">
+<div class='card border-0 shadow-sm rounded-4 p-4'>
+<h5 class='fw-bold mb-3'><i class='fas fa-info-circle text-primary me-2'></i> Справка по работе с библиотекой</h5>
+<p class='text-body-secondary mb-2'>
+1. <strong>База данных:</strong> Скачивание и импорт SQL-дампов выполняются автоматически по кнопке «Обновить базу» выше или по расписанию в Cron.
 </p>
-<p>
-Чтобы отображались фото авторов и обложек для форматов, отличных от FB2, необходимо разместить в каталоге cache файлы архивов lib.a.attached.zip и lib.b.attached.zip соответственно.
-В кэше хранятся распакованные фото авторов и обложек для FB2, а также их уменьшенные версии.</p>
-<p>Файлы архивов Флибусты (*.zip) размещаются в каталоге книги (по умолчанию <code>Flibusta.Net</code> на хосте, настраивается через <code>BOOKS_DIR</code> в <code>.env</code>). Обрабатываются также файлы ежедневных обновлений, но обязательно необходимо подгружать свежие SQL файлы.</p>
-<?php echo "<p>Доступен также OPDS-каталог для читалок: <a href='$webroot/opds/'>/opds/</a></p>"; ?>
-<p><b>Каталоги FlibustaSQL, cache и их подкаталоги должны иметь права на запись для контейнера. Скрипты в каталоге /application/tools/ должны иметь права на выполнение.</b></p>
-</div></div></div></div>
+<p class='text-body-secondary mb-2'>
+2. <strong>Архивы книг:</strong> Файлы архивов (*.zip) размещаются в каталоге книг (по умолчанию <code>Flibusta.Net</code> на хосте, настраивается через <code>BOOKS_DIR</code> в <code>.env</code>).
+</p>
+<p class='text-body-secondary mb-2'>
+3. <strong>OPDS-каталог:</strong> Для подключения внешних читалок (FBReader, Moon+ Reader, KOReader) используйте адрес: <code><?php echo $webroot; ?>/opds/</code>
+</p>
+</div></div></div>
 

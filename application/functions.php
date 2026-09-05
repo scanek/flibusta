@@ -25,7 +25,7 @@ function bbc2html($content) {
 }
 
 
-function show_gpager($page_count, $block_size = 100) {
+function show_gpager($page_count, $block_size = 5) {
 	global $url;
 	if (isset($_GET['page'])) {
 		$page = intval($_GET['page']);
@@ -33,116 +33,47 @@ function show_gpager($page_count, $block_size = 100) {
 		$page = 0;
 	}
 	if ($page_count > 1) {
-		echo "<nav><ul class='pagination pagination-sm'>";
+		echo "<nav aria-label='Навигация по страницам' class='my-4'>";
+		echo "<ul class='pagination pagination-sm justify-content-center flex-wrap gap-1'>";
 
-		$b1 = $page - $block_size;
-		$b2 = $block_size + $page;
+		$b1 = max(1, $page - $block_size + 1);
+		$b2 = min($page_count, $page + $block_size + 1);
 
-
-		if ($b1 < 1) {
-			$b1 = 1;
+		if ($page > 0) {
+			echo "<li class='page-item'><a class='page-link rounded-pill px-3' href='?page=0' title='Первая'><i class='fas fa-angle-double-left'></i></a></li>";
+			echo "<li class='page-item'><a class='page-link rounded-pill px-3' href='?page=" . ($page - 1) . "' title='Назад'><i class='fas fa-angle-left'></i></a></li>";
 		}
-		if ($b2 > $page_count) {
-			$b2 = $page_count;
-		}
-
-    	if ($b1 > 1) {
- 			echo "<li class='page-item'><a class='page-link' href='?page=", $b1 - 2, "' aria-label='Previous'><span aria-hidden='true'><i class='fas fa-angle-left'></i></span></a></li>";
-	    	
-    	}
 
 		for ($p = $b1; $p <= $b2; $p++) {
-			if ($p == $page + 1) {
-				$pv = 'active';
-			} else {
-				$pv = '';
-			}
-			echo "<li class='page-item $pv'><a class='page-link' href='?page=", $p - 1, "'>$p</a></li>";
+			$pv = ($p == $page + 1) ? 'active fw-bold' : '';
+			echo "<li class='page-item $pv'><a class='page-link rounded-pill px-3' href='?page=" . ($p - 1) . "'>$p</a></li>";
 		}
-		$pv = '';		
-    	
-    	if ($b2 < $page_count) {
-    		echo "<li class='page-item'><a class='page-link' href='?page=", $b2, "' aria-label='Next'><span aria-hidden='true'><i class='fas fa-angle-right'></i></span></a></li>";
-    	}
+
+		if ($page + 1 < $page_count) {
+			echo "<li class='page-item'><a class='page-link rounded-pill px-3' href='?page=" . ($page + 1) . "' title='Вперёд'><i class='fas fa-angle-right'></i></a></li>";
+			echo "<li class='page-item'><a class='page-link rounded-pill px-3' href='?page=" . ($page_count - 1) . "' title='Последняя'><i class='fas fa-angle-double-right'></i></a></li>";
+		}
 
 		echo '</ul></nav>';
 	}
 }
 
+function render_book_cover($book, $webroot = '', $size = 'small') {
+	$book_id = intval($book->bookid ?? 0);
+	$color_idx = $book_id % 6;
+	$title = htmlspecialchars($book->title ?? 'Без названия', ENT_QUOTES);
+	$type = strtoupper(htmlspecialchars($book->filetype ?? 'FB2', ENT_QUOTES));
+	$fallback_html = "<div class=\'cover-fallback cover-fallback-$color_idx\'>" .
+		"<span class=\'fallback-badge\'>$type</span>" .
+		"<div class=\'fallback-title\'>$title</div>" .
+		"</div>";
 
-
-function pg_array_parse($literal){
-    if ($literal == '') return;
-    preg_match_all('/(?<=^\{|,)(([^,"{]*)|\s*"((?:[^"\\\\]|\\\\(?:.|[0-9]+|x[0-9a-f]+))*)"\s*)(,|(?<!^\{)(?=\}$))/i', $literal, $matches, PREG_SET_ORDER);
-    $values = [];
-    foreach ($matches as $match) {
-        $values[] = $match[3] != '' ? stripcslashes($match[3]) : (strtolower($match[2]) == 'null' ? null : $match[2]);
-    }
-    return $values;
+	$img_url = "$webroot/extract_cover.php?id=$book_id" . ($size == 'small' ? '&small' : '');
+	return "<img class='book-img' src='$img_url' alt='$title' loading='lazy' onerror=\"this.outerHTML='" . $fallback_html . "';\" />";
 }
 
-function to_pg_array($set) {
-    settype($set, 'array'); // can be called with a scalar or array
-    $result = array();
-    foreach ($set as $t) {
-        if (is_array($t)) {
-            $result[] = to_pg_array($t);
-        } else {
-            $t = str_replace('"', '\\"', $t); // escape double quote
-            if (! is_numeric($t)) // quote only non-numeric values
-                $t = '"' .addslashes($t) . '"';
-            $result[] = $t;
-        }
-    }
-    return '{' . implode(",", $result) . '}'; // format
-}
-
-
-function book_small_pg($book, $webroot='',$full = false) {
-	global $dbh, $user_uuid;
-	if (!isset($book->bookid)) {
-		return;
-	}
-	echo "<div class='col-sm-2 col-6 mb-3'>";
-	echo "<div style='height: 100%' class='cover rounded text-center d-flex align-items-end flex-column'>";
-	echo "<a class='w-100' href='$webroot/book/view/$book->bookid'>";
-	echo "<img class='w-100 card-image rounded-top' src='$webroot/extract_cover.php?id=$book->bookid&small' />";
-
-	$dt =DateTime::createFromFormat('Y-m-d H:i:se', $book->time)->format('Y-m-d');
-	if (trim($book->filetype) == 'fb2') {
-		$ft = 'success';
-		$fhref = "$webroot/fb2.php?id=$book->bookid";
-	} else {
-		$ft = 'secondary';
-		$fhref = "$webroot/usr.php?id=$book->bookid";
-	}
-
-	if ($book->year != 0) {
-		$year = $book->year;
-	} else {
-		$year = $dt;
-	}
-
-	$stmt = $dbh->prepare("SELECT COUNT(*) cnt FROM fav WHERE user_uuid=:uuid AND bookid=:id");
-	$stmt->bindParam(":uuid", $user_uuid);
-	$stmt->bindParam(":id", $book->bookid);
-	$stmt->execute();
-	if ($stmt->fetch()->cnt > 0) {
-		$fav = 'btn-primary';
-		$fav_url = "?unfav_book=$book->bookid";
-	} else {
-		$fav = 'btn-outline-secondary';
-		$fav_url = "?fav_book=$book->bookid";
-	}
-
-	echo "<div>$book->title</div></a>";
-	echo "<div class='btn-group w-100 mt-auto' role='group'>";
-	echo "<button type='button' class='btn btn-outline-secondary btn-sm'>$year</button>";
-	echo "<a href='$fhref' title='Скачать' type='button' class='btn btn-outline-$ft btn-sm'>$book->filetype</a>";
-//	echo "<button type='button' class='btn btn-outline-secondary btn-sm'>$book->lang</button>";
-	echo "<a href='$fav_url' title='В избранное' type='button' class='btn $fav btn-sm'><i class='fas fa-heart'></i></a>";
-	
-	echo "</div></div></div>\n";
+function book_small_pg($book, $webroot = '', $full = false) {
+	book_info_pg($book, $webroot, false);
 }
 
 function book_info_pg($book, $webroot = '', $full = false) {
@@ -150,117 +81,143 @@ function book_info_pg($book, $webroot = '', $full = false) {
 	if (!isset($book->bookid)) {
 		return;
 	}
-	echo "<div class='hic card mb-3' itemscope='' itemtype='http://schema.org/Book'>";
-//	echo "<div class='card-header'>";
-	echo "<h4 class='rounded-top' style='background: #d0d0d0;'><a class='book-link' href='$webroot/book/view/$book->bookid'><i class='fas'></i> $book->title</h4></a>";
-//	echo "</div>";
-	echo "<div class='card-body'>";
-	echo "<div class='row'>";
-	echo "<div class='col-sm-2'>";
-	echo "<img class='w-100 card-image rounded cover' src='$webroot/extract_cover.php?id=$book->bookid&small' />";
 
-	$dt =DateTime::createFromFormat('Y-m-d H:i:se', $book->time)->format('Y-m-d');
-	if (trim($book->filetype) == 'fb2') {
-		$ft = 'success';
-		$fhref = "$webroot/fb2.php?id=$book->bookid";
-	} else {
-		$ft = 'secondary';
-		$fhref = "$webroot/usr.php?id=$book->bookid";
-	}
+	$book_id = intval($book->bookid);
+	$title = htmlspecialchars($book->title ?? 'Без названия');
+	$ft = trim(strtolower($book->filetype ?? 'fb2'));
+	$fhref = ($ft === 'fb2') ? "$webroot/fb2.php?id=$book_id" : "$webroot/usr.php?id=$book_id";
+	$year = ($book->year != 0) ? $book->year : (DateTime::createFromFormat('Y-m-d H:i:se', $book->time ?? '') ? DateTime::createFromFormat('Y-m-d H:i:se', $book->time)->format('Y') : '');
 
-	if ($book->year != 0) {
-		$year = $book->year;
-	} else {
-		$year = $dt;
-	}
-	
-
-	echo "<div class='btn-group w-100 mt-1' role='group'>";
-	echo "<button type='button' class='btn btn-outline-secondary btn-sm'>$year</button>";
-	echo "<a href='$fhref' title='Скачать' type='button' class='btn btn-outline-$ft btn-sm'>$book->filetype</a>";
-//	echo "<button type='button' class='btn btn-outline-secondary btn-sm'>$book->lang</button>";
-	if ($user_uuid != '') {
-		$stmt = $dbh->prepare("SELECT COUNT(*) cnt FROM fav WHERE user_uuid=:uuid AND bookid=:id");
-		$stmt->bindParam(":uuid", $user_uuid);
-		$stmt->bindParam(":id", $book->bookid);
-		$stmt->execute();
-		if ($stmt->fetch()->cnt > 0) {
-			$fav = 'btn-primary';
-			$fav_url = "?unfav_book=$book->bookid";
+	// Избранное
+	$fav_btn = '';
+	if (!empty($user_uuid)) {
+		$stmt_fav = $dbh->prepare("SELECT COUNT(*) cnt FROM fav WHERE user_uuid=:uuid AND bookid=:id");
+		$stmt_fav->bindParam(":uuid", $user_uuid);
+		$stmt_fav->bindParam(":id", $book_id);
+		$stmt_fav->execute();
+		if ($stmt_fav->fetch()->cnt > 0) {
+			$fav_btn = "<a href='?unfav_book=$book_id' title='Удалить с полки' class='btn btn-danger btn-sm'><i class='fas fa-heart'></i></a>";
 		} else {
-			$fav = 'btn-outline-secondary';
-			$fav_url = "?fav_book=$book->bookid";
+			$fav_btn = "<a href='?fav_book=$book_id' title='Добавить на полку' class='btn btn-outline-secondary btn-sm'><i class='far fa-heart'></i></a>";
 		}
-		echo "<a href='$fav_url' title='В избранное' type='button' class='btn $fav btn-sm'><i class='fas fa-heart'></i></a>";
 	}
-	echo "</div>";
-	
-	echo "</div><div class='col-sm-10'>";
-	echo "<div class='authors-list'>";
-	$stmt = $dbh->prepare("SELECT AvtorId, LastName, FirstName, nickname, middlename, File FROM libavtor a
+
+	// Авторы
+	$stmt_a = $dbh->prepare("SELECT AvtorId, LastName, FirstName, nickname, middlename, File FROM libavtor a
 		LEFT JOIN libavtorname USING(AvtorId)
 		LEFT JOIN libapics USING(AvtorId)
 		WHERE a.BookId=:id");
-	$stmt->bindParam(":id", $book->bookid);
-	$stmt->execute();
-	while ($a = $stmt->fetch()) {
-		echo "<div class='badge rounded-pill author'>";
-		if ($a->file != '') {
-			echo "<img class='rounded-circle contact' src='$webroot/extract_author.php?id=$a->avtorid' />";	
-		}
-		echo "<a href='$webroot/author/view/$a->avtorid'>$a->lastname $a->middlename $a->firstname $a->nickname</a>";
+	$stmt_a->bindParam(":id", $book_id);
+	$stmt_a->execute();
+	$authors = $stmt_a->fetchAll();
+
+	$authors_names = [];
+	$authors_html = '';
+	foreach ($authors as $a) {
+		$name = trim("$a->lastname $a->firstname $a->middlename $a->nickname");
+		if (empty($name)) $name = 'Неизвестный автор';
+		$authors_names[] = htmlspecialchars($name);
+		$avatar = !empty($a->file) ? "<img class='rounded-circle me-1' style='width: 20px; height: 20px; object-fit: cover;' src='$webroot/extract_author.php?id=$a->avtorid' />" : "<i class='fas fa-user-circle me-1 text-muted'></i>";
+		$authors_html .= "<a class='badge bg-body-secondary text-body-secondary text-decoration-none border me-1 mb-1 p-1 d-inline-flex align-items-center' href='$webroot/author/view/$a->avtorid'>$avatar" . htmlspecialchars($name) . "</a> ";
+	}
+	$authors_short = implode(', ', $authors_names);
+
+	// Жанры
+	$stmt_g = $dbh->prepare("SELECT GenreId, GenreDesc FROM libgenre JOIN libgenrelist USING(GenreId) WHERE BookId=:id");
+	$stmt_g->bindParam(":id", $book_id);
+	$stmt_g->execute();
+	$genres_html = '';
+	while ($g = $stmt_g->fetch()) {
+		$genres_html .= "<a class='badge-genre me-1 mb-1 d-inline-block' href='$webroot/?gid=$g->genreid'>" . htmlspecialchars($g->genredesc) . "</a> ";
+	}
+
+	// Серии
+	$stmt_s = $dbh->prepare("SELECT SeqId, SeqName, SeqNumb FROM libseq JOIN libseqname USING(SeqId) WHERE BookId=:id");
+	$stmt_s->bindParam(":id", $book_id);
+	$stmt_s->execute();
+	$seq_html = '';
+	while ($s = $stmt_s->fetch()) {
+		$numb = ($s->seqnumb > 0) ? " #" . $s->seqnumb : "";
+		$seq_html .= "<a class='badge-series me-1 mb-1 d-inline-block' href='$webroot/?sid=$s->seqid'>" . htmlspecialchars($s->seqname) . "$numb</a> ";
+	}
+
+	// Аннотация
+	$body_text = isset($book->body) ? trim($book->body) : '';
+	$body_clean = strip_tags($body_text);
+
+	// ПОЛНЫЙ ВИД (Страница произведения /book/view/<id>)
+	if ($full) {
+		$cover_img = render_book_cover($book, $webroot, 'large');
+		echo "<div class='book-detail-hero' itemscope itemtype='http://schema.org/Book'>";
+		echo "<div class='row g-4'>";
+		echo "<div class='col-md-4 col-lg-3 text-center text-md-start'>";
+		echo "<div class='cover-wrapper mx-auto mx-md-0' style='max-width: 240px; aspect-ratio: 1/1.5; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-cover);'>";
+		echo $cover_img;
 		echo "</div>";
-	}
-	echo "</div>";
+		echo "</div>";
 
+		echo "<div class='col-md-8 col-lg-9'>";
+		echo "<h1 class='book-detail-title'>$title</h1>";
+		echo "<div class='mb-3'>$authors_html</div>";
+		echo "<div class='mb-3 d-flex flex-wrap align-items-center gap-1'>$genres_html $seq_html</div>";
 
-	echo "<div style='margin-bottom: 3px;'>";
-	$genres = $dbh->prepare("SELECT GenreId, GenreDesc FROM libgenre 
-		JOIN libgenrelist USING(GenreId)
-		WHERE BookId=$book->bookid");
-	$genres->execute();
-	while ($g = $genres->fetch()) {
-		echo "<a class='badge bg-success p-1 text-white' href='$webroot/?gid=$g->genreid'>$g->genredesc</a> ";
-	}
-	echo "</div>";
-	
-	echo "<div style='margin-bottom: 3px;'>";
-	$seq = $dbh->prepare("SELECT SeqId, SeqName, SeqNumb FROM libseq
-				JOIN libseqname USING(SeqId)
-				WHERE BookId=:id");
-	$seq->bindParam(":id", $book->bookid);
-	$seq->execute();
-	while ($s = $seq->fetch()) {
-		echo "<a class='badge bg-danger p-1 text-white' href='$webroot/?sid=$s->seqid'>$s->seqname ";
-		if ($s->seqnumb > 0) {
-			echo " $s->seqnumb";
+		echo "<div class='d-flex flex-wrap align-items-center gap-2 my-4'>";
+		echo "<a href='#reader' class='btn btn-primary btn-lg rounded-pill px-4 shadow-sm'><i class='fas fa-book-open me-2'></i> Читать онлайн</a>";
+		echo "<a href='$fhref' class='btn btn-outline-primary btn-lg rounded-pill px-4'><i class='fas fa-download me-2'></i> Скачать " . strtoupper($ft) . "</a>";
+		echo $fav_btn;
+		echo "</div>";
+
+		if (!empty($year)) {
+			echo "<p class='text-muted mb-2'><i class='far fa-calendar-alt me-1'></i> Год издания: <strong>$year</strong> &bull; Формат: <strong>" . strtoupper($ft) . "</strong></p>";
 		}
-		echo "</a> ";
-	}
-	echo "</div>";
 
-	echo "<div style='margin-bottom: 3px;'>";
-	if ($book->keywords != '') {
-		$kw = explode(",", $book->keywords);
-		foreach ($kw as $k) {
-			echo "<a class='badge bg-secondary p-1 text-white' href='#'>$k</a> ";
+		if (!empty($body_clean)) {
+			echo "<div class='book-detail-annotation'>";
+			echo "<h5 class='fw-bold mb-2'>Аннотация</h5>";
+			echo "<p class='text-body-secondary' style='white-space: pre-line;'>" . nl2br(htmlspecialchars($body_clean)) . "</p>";
+			echo "</div>";
 		}
+
+		echo "</div>"; // col-md-8
+		echo "</div>"; // row
+		echo "</div>\n"; // book-detail-hero
+		return;
+	}
+
+	// КАТАЛОЖНЫЙ ВИД (Поддержка Сетки Grid и Списка List)
+	$cover_img = render_book_cover($book, $webroot, 'small');
+	$annotation_short = cut_str($body_clean, 220);
+
+	echo "<div class='book-card' itemscope itemtype='http://schema.org/Book'>";
+	echo "<div class='cover-wrapper'>";
+	echo "<a href='$webroot/book/view/$book_id'>$cover_img</a>";
+	echo "</div>";
+
+	echo "<div class='book-body'>";
+	echo "<a class='book-title' href='$webroot/book/view/$book_id' title='$title'>$title</a>";
+	echo "<div class='book-author' title='$authors_short'>$authors_short</div>";
+
+	echo "<div class='book-meta-tags d-flex flex-wrap gap-1 mb-1'>$genres_html $seq_html</div>";
+	if (!empty($annotation_short)) {
+		echo "<div class='book-annotation text-muted'>$annotation_short</div>";
+	}
+
+	echo "<div class='book-footer'>";
+	echo "<div class='d-flex align-items-center gap-1'>";
+	echo "<span class='badge bg-secondary-subtle text-secondary badge-format'>" . strtoupper($ft) . "</span>";
+	if (!empty($year)) {
+		echo "<span class='text-muted' style='font-size: 0.75rem;'>$year</span>";
 	}
 	echo "</div>";
 
-	echo "<div style='font-size: 0.8em;'>";
-	if (isset($book->body)) {
-		if ($full) {
-			echo "<p>" . trim($book->body) . "</p>";
-		} else {
-			echo "<p>" . cut_str(trim(strip_tags($book->body))) . "</p>";
-		}
-	}
+	echo "<div class='btn-group btn-group-sm'>";
+	echo "<a href='$fhref' class='btn btn-outline-primary btn-sm' title='Скачать'><i class='fas fa-download'></i></a>";
+	echo $fav_btn;
 	echo "</div>";
+	echo "</div>"; // book-footer
 
-	echo "</div>";
-	echo "</div>";
-	echo "</div></div>\n";
+	echo "</div>"; // book-body
+	echo "</div>\n"; // book-card
 }
 
 date_default_timezone_set('Europe/Minsk');

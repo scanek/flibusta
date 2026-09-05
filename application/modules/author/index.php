@@ -5,15 +5,20 @@ $stmt->bindParam(":id", $url->var1);
 $stmt->execute();
 $a = $stmt->fetch();
 
-echo "<div class='card mb-3'>";
-echo "<div class='card-header'><h3>$a->lastname $a->firstname $a->middlename $a->nickname</h3></div>";
-echo "<div class='card-body'><div class='row'>";
+$author_name = trim("$a->lastname $a->firstname $a->middlename $a->nickname");
+if (empty($author_name)) $author_name = 'Неизвестный автор';
 
-echo "<div class='col-sm-2 mb-3'>";
-if (isset($a->file)) {
-	echo "<img src='$webroot/extract_author.php?id=$a->avtorid' style='width: 100%;' class='card-image' /><br />";	
+echo "<div class='card border-0 shadow-sm rounded-4 p-4 mb-4'>";
+echo "<div class='row g-4 align-items-start'>";
+
+echo "<div class='col-md-3 text-center'>";
+if (!empty($a->file)) {
+	echo "<img src='$webroot/extract_author.php?id=$a->avtorid' class='rounded-circle shadow-sm mb-3' style='width: 140px; height: 140px; object-fit: cover;' alt='$author_name' />";	
+} else {
+	echo "<div class='rounded-circle bg-body-secondary text-muted d-inline-flex align-items-center justify-content-center shadow-sm mb-3' style='width: 140px; height: 140px;'><i class='fas fa-user fa-4x'></i></div>";
 }
-echo "<a class='btn btn-primary mt-2 w-100' href='$webroot/?aid=$a->avtorid'>Книги автора</a>";
+echo "<div class='d-grid gap-2'>";
+echo "<a class='btn btn-primary rounded-pill' href='$webroot/?aid=$a->avtorid'><i class='fas fa-book me-1'></i> Книги автора</a>";
 
 try {
 	$stmt = $dbh->prepare("SELECT COUNT(*) cnt FROM fav WHERE user_uuid=:uuid AND avtorid=:id");
@@ -22,27 +27,35 @@ try {
 	$stmt->execute();
 	$is_fav = ($stmt->fetch()->cnt > 0);
 	if (!$is_fav) {
-		echo "<a class='btn btn-secondary mt-2 w-100' href='$webroot/?fav_author=$a->avtorid'>В избранное</a>";
+		echo "<a class='btn btn-outline-secondary rounded-pill' href='$webroot/?fav_author=$a->avtorid'><i class='far fa-heart me-1'></i> В избранное</a>";
 	} else {
-		echo "<a class='btn btn-warning mt-2 w-100' href='$webroot/?unfav_author=$a->avtorid'>Из избранного</a>";
+		echo "<a class='btn btn-danger rounded-pill' href='$webroot/?unfav_author=$a->avtorid'><i class='fas fa-heart me-1'></i> На полке</a>";
 	}
 } catch (PDOException $e) {
 	//
 }
+echo "</div>"; // d-grid
+echo "</div>"; // col-md-3
 
-echo "</div>";
-echo "<div class='col-sm-10 mb-3'>";
+echo "<div class='col-md-9'>";
+echo "<h2 class='fw-bold mb-3' style='font-family: var(--font-serif);'>$author_name</h2>";
 
 $stmt = $dbh->prepare("SELECT * FROM libaannotations WHERE AvtorId=:id");
 $stmt->bindParam(":id", $url->var1);
 $stmt->execute();
+$has_bio = false;
 while ($an = $stmt->fetch()) {
-	echo "$an->title<br />";
-	echo "<p>", bbc2html(nl2br($an->body)), "</p>";
+	$has_bio = true;
+	if (!empty($an->title)) {
+		echo "<h5 class='text-muted mb-2'>" . htmlspecialchars($an->title) . "</h5>";
+	}
+	echo "<div class='text-body-secondary lh-lg mb-3'>" . bbc2html(nl2br($an->body)) . "</div>";
 }
-echo '</div>';
 
+if (!$has_bio) {
+	echo "<p class='text-muted'>Информация и биография автора пока не добавлены.</p>";
+}
 
-
-echo "</div></div></div>";
+echo "</div>"; // col-md-9
+echo "</div></div>"; // row, card
 
