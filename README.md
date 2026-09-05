@@ -8,18 +8,35 @@
 
 |![x](blob/x1.png)|![x](blob/x2.png)|![x](blob/x3.png)|![x](blob/x4.png)|
 |---|---|---|---|
-## Установка и быстрый запуск:
+## Установка из Git:
 
-1. Установить Docker и Docker Compose.
-2. Склонировать репозиторий:
+### Вариант 1: Установка одной командой (интерактивный скрипт)
+
+**Для Linux / macOS / NAS (через SSH):**
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/scanek/flibusta/main/install.sh)"
+```
+
+**Для Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/scanek/flibusta/main/install.ps1 | iex
+```
+Скрипт автоматически проверит Docker, склонирует репозиторий, спросит путь к книгам (`BOOKS_DIR`) и порты, создаст нужные папки и запустит контейнеры.
+
+---
+
+### Вариант 2: Ручная установка
+
+1. Склонировать репозиторий:
    ```bash
    git clone https://github.com/scanek/flibusta.git
    cd flibusta
    ```
-3. Скопировать и настроить `.env` при необходимости (порты, пароли, пути к книгам):
+2. Скопировать и настроить `.env` при необходимости (порты, пароли, путь к книгам `BOOKS_DIR`):
    ```bash
    cp .env.example .env
    ```
+   *Или запустите `./install.sh` для интерактивной настройки.*
 4. Разместить файлы дампа Флибусты (`*.sql` или `*.sql.gz`) в каталог `FlibustaSQL/` (или скачать через `./getsql.sh`).
 5. Разместить архивы книг (`f.fb2.*.zip`, `f.n.*.zip`) в каталоге `Flibusta.Net/` (или в любой другой папке на диске, указав её путь в `BOOKS_DIR` в файле `.env`). Для скачивания свежих книг можно использовать `./update_daily.sh`.
 6. Собрать и запустить контейнеры:
