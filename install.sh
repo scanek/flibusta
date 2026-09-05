@@ -43,6 +43,9 @@ else
     PROJECT_DIR="$(pwd)"
 fi
 
+# Очистка возможных CRLF окончаний строк
+sed -i 's/\r$//' *.sh application/tools/*.sh application/tools/app_topg .env* 2>/dev/null || true
+
 echo -e "\n${BLUE}--> Проверка зависимостей (Docker)...${NC}"
 if ! command -v docker >/dev/null 2>&1; then
     echo -e "${RED}Ошибка: Docker не найден! Установите Docker (https://docs.docker.com/get-docker/) и повторите запуск.${NC}"
@@ -71,7 +74,6 @@ echo -e "\n${BLUE}--> Настройка параметров (.env)...${NC}"
 # Если .env уже есть, считываем существующие значения
 if [ -f ".env" ]; then
     echo -e "${YELLOW}Файл .env уже существует.${NC}"
-    # source variables safely
     source .env 2>/dev/null || true
 else
     cp .env.example .env
@@ -121,6 +123,7 @@ mkdir -p "${CACHE_DIR:-./cache}/tmp"
 chmod +x *.sh 2>/dev/null || true
 chmod +x application/tools/*.sh 2>/dev/null || true
 chmod +x application/tools/app_topg 2>/dev/null || true
+sed -i 's/\r$//' *.sh application/tools/*.sh application/tools/app_topg .env* 2>/dev/null || true
 
 # Попытка выставить права на запись для www-data (UID 82 в alpine), если запуск с root
 if [ "$(id -u)" -eq 0 ]; then

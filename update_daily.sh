@@ -1,11 +1,18 @@
 #!/bin/sh
 set -e
 
+# Загружаем настройки из .env если файл существует
+if [ -f ".env" ]; then
+    set -a
+    . ./.env
+    set +a
+fi
+
 URL="${FLIBUSTA_DAILY_URL:-https://flibusta.is/daily/}"
 DEST_DIR="${BOOKS_DIR:-./Flibusta.Net}"
 mkdir -p "$DEST_DIR"
 
-echo "Checking daily updates from $URL..."
+echo "Checking daily updates from $URL to $DEST_DIR..."
 curl -s "$URL" > page.html || true
 
 if [ -s page.html ]; then

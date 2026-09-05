@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+# Загружаем настройки из .env если файл существует
+if [ -f ".env" ]; then
+    set -a
+    . ./.env
+    set +a
+fi
+
 BASE_URL="${FLIBUSTA_SQL_URL:-https://flibusta.is/sql/}"
 DEST_DIR="${SQL_DIR:-./FlibustaSQL}"
 
@@ -18,7 +25,7 @@ done
 echo "Starting database import in docker container..."
 if docker compose version >/dev/null 2>&1; then
     docker compose exec php-fpm /application/tools/app_import_sql.sh
-elif docker-compose version >/dev/null 2>&1; then
+elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose exec php-fpm /application/tools/app_import_sql.sh
 else
     CONTAINER_ID=$(docker ps -q --filter "name=flibusta_php" || docker ps -q --filter "ancestor=flibusta_php-fpm")
@@ -29,4 +36,3 @@ else
         exit 1
     fi
 fi
-
