@@ -1,4 +1,7 @@
 <?php
+if (ob_get_length()) {
+	ob_clean();
+}
 switch ($url->action) {
 	case 'list':
 		include('list.php');
