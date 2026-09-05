@@ -39,6 +39,7 @@ services:
             FLIBUSTA_DBNAME: ${POSTGRES_DB:-flibusta}
             FLIBUSTA_DBPASSWORD: ${POSTGRES_PASSWORD:-flibusta}
             FLIBUSTA_DBHOST: postgres
+            FLIBUSTA_DBTYPE: postgres
             FLIBUSTA_BOOKS_DIR: /application/flibusta
             FLIBUSTA_SQL_URL: ${FLIBUSTA_SQL_URL:-https://flibusta.is/sql/}
             AUTO_IMPORT_ON_START: ${AUTO_IMPORT_ON_START:-false}

@@ -16,7 +16,34 @@ if (!empty($service_password)) {
 <h4 class="rounded-top p-1" style="background: #d0d0d0;">Статистика</h4>
 <div class='card-body'>
 <?php
-$status_import = (trim(shell_exec('ps aux|grep app_|grep -v grep') ?? '') !== '');
+$status_file = '/application/sql/status';
+$pid_file = '/application/sql/sync.pid';
+
+$status_import = false;
+
+// 1. Проверка файла PID
+if (file_exists($pid_file)) {
+	$pid = trim(@file_get_contents($pid_file));
+	if (!empty($pid) && file_exists("/proc/$pid")) {
+		$status_import = true;
+	}
+}
+
+// 2. Проверка списка процессов
+if (!$status_import) {
+	$ps = trim(shell_exec('ps aux | grep -E "docker_sync|app_import|app_topg|app_reindex|wget|curl|psql|app_db_converter" | grep -v grep') ?? '');
+	if (!empty($ps)) {
+		$status_import = true;
+	}
+}
+
+// 3. Проверка актуальности файла статуса
+if (!$status_import && file_exists($status_file)) {
+	$stat_text = trim(@file_get_contents($status_file));
+	if (!empty($stat_text) && (time() - filemtime($status_file) < 60)) {
+		$status_import = true;
+	}
+}
 
 function get_ds($path){
 	$io = popen ( '/usr/bin/du -sk ' . $path, 'r' );
@@ -39,7 +66,7 @@ if (!$status_import) {
 	echo "<tr><td>Размер кэша:</td><td>$cache_size Mb</td></tr>";
 	echo "</tbody></table>";
 } else {
-	echo "Идёт процесс импорта...";
+	echo "<div class='text-primary fw-bold'><div class='spinner-border spinner-border-sm me-2' role='status'></div>Идёт процесс импорта или синхронизации...</div>";
 }
 ?>
 </div>
@@ -57,18 +84,21 @@ if (isset($_GET['empty'])) {
 	shell_exec('rm /application/cache/authors/*');
 	shell_exec('rm /application/cache/covers/*');
 	header("location:$webroot/service/");
+	exit;
 }
 
 if (!$status_import) {
 	if (isset($_GET['import'])) {
-		shell_exec('stdbuf -o0 /application/tools/docker_sync_sql.sh 2>/dev/null >/dev/null &');
-		$status_fetch = true;
+		@file_put_contents($status_file, "Запуск процесса синхронизации базы данных...");
+		shell_exec('/bin/sh /application/tools/docker_sync_sql.sh > /application/sql/sync.log 2>&1 &');
 		header("location:$webroot/service/");
+		exit;
 	}
 	if (isset($_GET['reindex'])) {
-		shell_exec('stdbuf -o0 /application/tools/app_reindex.sh 2>/dev/null >/dev/null &');
-		$status_fetch = true;
+		@file_put_contents($status_file, "Запуск сканирования и создания индекса ZIP-файлов...");
+		shell_exec('/bin/sh /application/tools/app_reindex.sh > /application/sql/sync.log 2>&1 &');
 		header("location:$webroot/service/");
+		exit;
 	}
 }
 
@@ -80,15 +110,31 @@ if ($status_import) {
 echo "<div class='d-flex justify-content-between'>";
 echo "<a class='btn btn-primary m-1 $status' href='?import=sql'>Обновить базу</a> ";
 echo "<a class='btn btn-warning m-1' href='?empty=cache'>Очистить кэш</a> ";
-echo "<a class='btn btn-warning m-1' href='?reindex'>Сканирование ZIP</a> ";
+echo "<a class='btn btn-warning m-1 $status' href='?reindex'>Сканирование ZIP</a> ";
 echo "</div>";
 
 if ($status_import) {
-	$op = file_get_contents('/application/sql/status');;
-	echo "<div class='d-flex align-items-center m-3'>";
-	echo nl2br($op);
-	echo "<div class='spinner-border ms-auto' role='status' aria-hidden='true'></div></div>";
-	header("Refresh:10");
+	$op = file_exists($status_file) ? trim(file_get_contents($status_file)) : '';
+	if (empty($op)) {
+		$op = 'Идёт обработка данных (скачивание или импорт)...';
+	}
+	echo "<div class='alert alert-info d-flex align-items-center mt-3 mb-2'>";
+	echo "<div class='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></div>";
+	echo "<div><strong>Текущее действие:</strong> " . nl2br(htmlspecialchars($op)) . "</div>";
+	echo "</div>";
+
+	if (file_exists('/application/sql/sync.log')) {
+		$log_tail = shell_exec('tail -n 10 /application/sql/sync.log 2>/dev/null');
+		if (!empty($log_tail)) {
+			echo "<div class='mt-2'><small class='text-muted fw-bold'>Лог выполнения (последние строки):</small>";
+			echo "<pre class='bg-dark text-light p-2 rounded' style='font-size: 11px; max-height: 160px; overflow-y: auto; white-space: pre-wrap;'>" . htmlspecialchars($log_tail) . "</pre></div>";
+		}
+	}
+	header("Refresh:3");
+} else if (file_exists('/application/sql/sync.log') && file_exists($status_file) && trim(file_get_contents($status_file)) === '') {
+	if (time() - filemtime($status_file) < 120) {
+		echo "<div class='alert alert-success mt-3'>Обновление базы успешно завершено!</div>";
+	}
 }
 
 ?>

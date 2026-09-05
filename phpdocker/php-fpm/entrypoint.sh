@@ -3,6 +3,11 @@ set -e
 
 . /application/tools/dbinit.sh
 
+# Настройка прав на директории и утилиты
+mkdir -p /application/sql /application/cache/authors /application/cache/covers /application/cache/tmp
+chmod -R 777 /application/sql /application/cache 2>/dev/null || true
+chmod +x /application/tools/*.sh /application/tools/app_topg 2>/dev/null || true
+
 # Ожидание готовности PostgreSQL
 echo "Проверка доступности базы данных PostgreSQL ($FLIBUSTA_DBHOST)..."
 MAX_TRIES=30

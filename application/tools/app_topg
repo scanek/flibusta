@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 echo "Конвертация $1">>/application/sql/status
 if ! grep -q INSERT "/application/sql/$1"; then   
   echo "Empty table">>/application/sql/status;

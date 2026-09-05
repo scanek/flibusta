@@ -12,7 +12,7 @@ if [ -z "$FLIBUSTA_DBUSER" ]; then
   export FLIBUSTA_DBUSER=flibusta
 fi
 
-if [ -z "$FLIBUSTA_DBTYPE" ] || [ "$FLIBUSTA_DBTYPE" == 'postgres' ]; then
+if [ -z "$FLIBUSTA_DBTYPE" ] || [ "$FLIBUSTA_DBTYPE" = 'postgres' ]; then
   export SQL_CMD="psql -h $FLIBUSTA_DBHOST -d $FLIBUSTA_DBNAME -U $FLIBUSTA_DBUSER"
   export SQL_PASSWORD_VAR=PGPASSWORD
 
