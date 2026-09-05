@@ -4,7 +4,10 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 
 WORKDIR "/application"
 
-RUN apk --update add postgresql-client;\
-  apk add python3;\
-  apk add coreutils;
+RUN apk --update add postgresql-client python3 coreutils wget curl bash gzip;
 RUN chmod +x /usr/local/bin/install-php-extensions; install-php-extensions gd bz2 pdo_pgsql zip
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

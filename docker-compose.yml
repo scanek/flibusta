@@ -39,9 +39,34 @@ services:
             FLIBUSTA_DBNAME: ${POSTGRES_DB:-flibusta}
             FLIBUSTA_DBPASSWORD: ${POSTGRES_PASSWORD:-flibusta}
             FLIBUSTA_DBHOST: postgres
+            FLIBUSTA_BOOKS_DIR: /application/flibusta
+            FLIBUSTA_SQL_URL: ${FLIBUSTA_SQL_URL:-https://flibusta.is/sql/}
+            AUTO_IMPORT_ON_START: ${AUTO_IMPORT_ON_START:-false}
+            SERVICE_PASSWORD: ${SERVICE_PASSWORD:-}
+
+    sync-sql:
+        build: phpdocker/php-fpm
+        container_name: flibusta_sync
+        working_dir: /application
+        depends_on:
+            postgres:
+                condition: service_healthy
+        volumes:
+            - './application:/application'
+            - '${CACHE_DIR:-./cache}:/application/cache'
+            - '${BOOKS_DIR:-./Flibusta.Net}:/application/flibusta'
+            - '${SQL_DIR:-./FlibustaSQL}:/application/sql'
+        environment:
+            FLIBUSTA_DBUSER: ${POSTGRES_USER:-flibusta}
+            FLIBUSTA_DBNAME: ${POSTGRES_DB:-flibusta}
+            FLIBUSTA_DBPASSWORD: ${POSTGRES_PASSWORD:-flibusta}
+            FLIBUSTA_DBHOST: postgres
             FLIBUSTA_DBTYPE: postgres
             FLIBUSTA_BOOKS_DIR: /application/flibusta
-            SERVICE_PASSWORD: ${SERVICE_PASSWORD:-}
+            FLIBUSTA_SQL_URL: ${FLIBUSTA_SQL_URL:-https://flibusta.is/sql/}
+        entrypoint: ["/application/tools/docker_sync_sql.sh"]
+        profiles:
+            - sync
 
     webserver:
         image: 'nginx:alpine'

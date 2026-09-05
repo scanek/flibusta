@@ -61,7 +61,7 @@ if (isset($_GET['empty'])) {
 
 if (!$status_import) {
 	if (isset($_GET['import'])) {
-		shell_exec('stdbuf -o0 /application/tools/app_import_sql.sh 2>/dev/null >/dev/null &');
+		shell_exec('stdbuf -o0 /application/tools/docker_sync_sql.sh 2>/dev/null >/dev/null &');
 		$status_fetch = true;
 		header("location:$webroot/service/");
 	}
