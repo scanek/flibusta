@@ -1,23 +1,20 @@
 <?php
 header('Content-Type: application/atom+xml; charset=utf-8');
 
-$letters = $_GET['letters'] ?? '';
+$letters = preg_replace('/[^A-Za-zА-Яа-яЁё0-9]/u', '', $_GET['letters'] ?? '');
+$length_letters = mb_strlen($letters, 'UTF-8');
 
-if ($letters !== '') {
-    $length_letters = mb_strlen($letters, 'UTF-8');
-} else {
-    $length_letters = 0; // Установите подходящее значение по умолчанию
-}
-
-echo '<?xml version="1.0" encoding="utf-8"?>';
+echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+echo '<?xml-stylesheet type="text/xsl" href="' . htmlspecialchars($webroot . '/opds.xsl', ENT_QUOTES, 'UTF-8') . '"?>' . "\n";
 echo <<< _XML
- <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="http://opds-spec.org/2010/catalog"> <id>tag:root:authors</id>
+ <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="https://specs.opds.io/opds-1.2">
+ <id>tag:root:sequences</id>
  <title>Книги по сериям</title>
  <updated>$cdt</updated>
  <icon>/favicon.ico</icon>
  <link href="$webroot/opds-opensearch.xml.php" rel="search" type="application/opensearchdescription+xml" />
- <link href="$webroot/opds/authorsindex?letters={searchTerms}" rel="search" type="application/atom+xml" />
- <link href="$webroot/opds" rel="start" type="application/atom+xml;profile=opds-catalog" />\n
+ <link href="$webroot/opds/search?q={searchTerms}" rel="search" type="application/atom+xml" />
+ <link href="$webroot/opds/" rel="start" type="application/atom+xml;profile=opds-catalog" />\n
 _XML;
 
 $query="

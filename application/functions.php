@@ -523,95 +523,157 @@ function formatSizeUnits($bytes)
         return $bytes;
     }
 
-function opds_book($b,$webroot = '') {
+function get_book_mime_type($ft) {
+	$ft = strtolower(trim($ft ?? ''));
+	switch ($ft) {
+		case 'fb2':
+			return 'application/x-fictionbook+xml';
+		case 'epub':
+			return 'application/epub+zip';
+		case 'mobi':
+		case 'azw':
+		case 'azw3':
+			return 'application/x-mobipocket-ebook';
+		case 'pdf':
+			return 'application/pdf';
+		case 'djvu':
+			return 'image/vnd.djvu';
+		case 'txt':
+			return 'text/plain';
+		case 'rtf':
+			return 'application/rtf';
+		case 'doc':
+			return 'application/msword';
+		case 'docx':
+			return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+		case 'cbr':
+			return 'application/x-cbr';
+		case 'cbz':
+			return 'application/x-cbz';
+		default:
+			return 'application/octet-stream';
+	}
+}
+
+function opds_book($b, $webroot = '') {
 	global $dbh;
-	echo "\n<entry> <updated>" . $b->time . "</updated>";
-	echo " <id>tag:book:$b->bookid</id>";
-	echo " <title>" . htmlspecialchars($b->title) . "</title>";
+	$bookid = $b->bookid ?? $b->BookId ?? 0;
+	$title = $b->title ?? $b->Title ?? 'Книга';
+	$time = $b->time ?? $b->Time ?? date('Y-m-d H:i:s');
+	$lang = trim($b->lang ?? $b->Lang ?? 'ru');
+	$year = intval($b->year ?? $b->Year ?? 0);
+	$filetype = strtolower(trim($b->filetype ?? $b->FileType ?? 'fb2'));
+	$filesize = intval($b->filesize ?? $b->FileSize ?? 0);
+	$keywords = trim($b->keywords ?? $b->Keywords ?? '');
+
+	echo "\n<entry>\n";
+	echo " <updated>" . htmlspecialchars($time, ENT_XML1, 'UTF-8') . "</updated>\n";
+	echo " <id>tag:book:$bookid</id>\n";
+	echo " <title>" . htmlspecialchars($title, ENT_XML1, 'UTF-8') . "</title>\n";
 
 	$ann = $dbh->prepare("SELECT body annotation FROM libbannotations WHERE bookid=:id LIMIT 1");
-	$ann->bindParam(":id", $b->bookid);
+	$ann->bindValue(":id", $bookid, PDO::PARAM_INT);
 	$ann->execute();
+	$an = '';
 	if ($tmp = $ann->fetch()) {
-		$an = $tmp->annotation;
-	} else {
-		$an = '';
+		$an = $tmp->annotation ?? '';
 	}
+
 	$genres = $dbh->prepare("SELECT genrecode, GenreId, GenreDesc FROM libgenre 
 		JOIN libgenrelist USING(GenreId)
 		WHERE bookid=:id");
-	$genres->bindParam(":id", $b->bookid);
+	$genres->bindValue(":id", $bookid, PDO::PARAM_INT);
 	$genres->execute();
 	while ($g = $genres->fetch()) {
-		echo "<category term='$webroot/subject/" . urlencode($g->genrecode) . "' label='$g->genredesc'/>";
+		$gcode = $g->genrecode ?? $g->GenreCode ?? '';
+		$gdesc = $g->genredesc ?? $g->GenreDesc ?? '';
+		echo " <category term='" . htmlspecialchars($webroot . "/opds/list/?genre_id=" . ($g->genreid ?? $g->GenreId), ENT_QUOTES, 'UTF-8') . "' label='" . htmlspecialchars($gdesc, ENT_XML1, 'UTF-8') . "'/>\n";
 	}
 
 	$sq = '';
 	$seq = $dbh->prepare("SELECT SeqId, SeqName, SeqNumb FROM libseq
 		JOIN libseqname USING(SeqId)
 		WHERE BookId=:id");
-	$seq->bindParam(":id", $b->bookid);
+	$seq->bindValue(":id", $bookid, PDO::PARAM_INT);
 	$seq->execute();
 	while ($s = $seq->fetch()) {
-		$ssq = $s->seqname;
-		if ($s->seqnumb > 0) {
-			$ssq .= " ($s->seqnumb) ";
+		$sid = $s->seqid ?? $s->SeqId;
+		$sname = $s->seqname ?? $s->SeqName;
+		$snumb = intval($s->seqnumb ?? $s->SeqNumb ?? 0);
+		$ssq = $sname;
+		if ($snumb > 0) {
+			$ssq .= " ($snumb)";
 		}
-		$sq .= $ssq;
-		echo " <link href='$webroot/opds/list?seq_id=".$s->seqid."' rel='related' type='application/atom+xml' title='Все книги серии &quot;$ssq&quot;' />";
+		$sq .= ($sq ? ', ' : '') . $ssq;
+		echo " <link href='" . htmlspecialchars($webroot . "/opds/list?seq_id=" . $sid, ENT_QUOTES, 'UTF-8') . "' rel='related' type='application/atom+xml;profile=opds-catalog' title='" . htmlspecialchars("Все книги серии \"$ssq\"", ENT_QUOTES, 'UTF-8') . "' />\n";
 	}
 	if ($sq != '') {
-		$sq = "Сборник: $sq";
+		$sq = "Серия: $sq";
 	}
 
-
-	echo "<author>";
-	$au = $dbh->prepare("SELECT AvtorId, LastName, FirstName, nickname, middlename, File FROM libavtor a
+	$au = $dbh->prepare("SELECT AvtorId, LastName, FirstName, nickname, middlename FROM libavtor a
 		LEFT JOIN libavtorname USING(AvtorId)
-		LEFT JOIN libapics USING(AvtorId)
 		WHERE a.bookid=:id");
-	$au->bindParam(":id", $b->bookid);
+	$au->bindValue(":id", $bookid, PDO::PARAM_INT);
 	$au->execute();
-	while ($a = $au->fetch()) {
-		echo "<name>$a->lastname $a->firstname $a->middlename</name>";
-		echo "<uri>/opds/author?author_id=$a->avtorid</uri>";
-	}
-	echo "</author>";
-	$au->execute();
-	while ($a = $au->fetch()) {
-		echo "\n <link href='$webroot/opds/list?author_id=$a->avtorid' rel='related' type='application/atom+xml' title='Все книги автора $a->lastname $a->firstname $a->middlename' />";
-	}
-	echo " <dc:language>" . trim($b->lang) . "</dc:language>";
-	if ($b->year > 0) {
-		echo " <dc:issued>$b->year</dc:issued>";
-	}
-	
-	// Include the type of the book as <dc:format> element
-	echo " <dc:format>" . trim($b->filetype) . "</dc:format>";
-	
-	// Include the size of the book as <dcterms:extent> element using the FileSize attribute from $b
-	echo " <dcterms:extent>" . formatSizeUnits($b->filesize) . " bytes</dcterms:extent>";
-	
-	echo "\n <summary type='text'>" . strip_tags($an);
-	echo "\n $sq ";
-	echo "\n $b->keywords";
-	if ($b->year > 0) {
-		echo "\n Год издания: $b->year";
-	}
-	echo "\n Формат: $b->filetype";
-	echo "\n Язык: $b->lang";
-	echo "\n Размер: " . formatSizeUnits($b->filesize);
-	echo "\n </summary>";
+	$authors_list = $au->fetchAll();
 
-	echo "\n <link rel='http://opds-spec.org/image/thumbnail' href='$webroot/extract_cover.php?id=$b->bookid' type='image/jpeg'/>";
-	echo "\n <link rel='http://opds-spec.org/image' href='$webroot/extract_cover.php?id=$b->bookid' type='image/jpeg'/>";
-	if (trim($b->filetype) == 'fb2') {
-		$ur = 'fb2';
-	} else {
-		$ur = 'usr';
+	foreach ($authors_list as $a) {
+		$aname = trim(($a->lastname ?? '') . ' ' . ($a->firstname ?? '') . ' ' . ($a->middlename ?? ''));
+		if (empty($aname) && !empty($a->nickname)) {
+			$aname = $a->nickname;
+		}
+		if (empty($aname)) {
+			$aname = 'Неизвестный автор';
+		}
+		echo " <author>\n";
+		echo "  <name>" . htmlspecialchars($aname, ENT_XML1, 'UTF-8') . "</name>\n";
+		echo "  <uri>" . htmlspecialchars($webroot . "/opds/author?author_id=" . ($a->avtorid ?? $a->AvtorId), ENT_QUOTES, 'UTF-8') . "</uri>\n";
+		echo " </author>\n";
+		echo " <link href='" . htmlspecialchars($webroot . "/opds/list?author_id=" . ($a->avtorid ?? $a->AvtorId), ENT_QUOTES, 'UTF-8') . "' rel='related' type='application/atom+xml;profile=opds-catalog' title='" . htmlspecialchars("Все книги автора $aname", ENT_QUOTES, 'UTF-8') . "' />\n";
 	}
-	echo "\n <link href='$webroot/$ur.php?id=$b->bookid' rel='http://opds-spec.org/acquisition/open-access' type='application/" . trim($b->filetype) . "' />";
-	echo "\n <link href='$webroot/book/view/$b->bookid' rel='alternate' type='text/html' title='Книга на сайте' />";
 
+	if ($lang != '') {
+		echo " <dc:language>" . htmlspecialchars($lang, ENT_XML1, 'UTF-8') . "</dc:language>\n";
+	}
+	if ($year > 0) {
+		echo " <dc:issued>$year</dc:issued>\n";
+	}
+	if ($filetype != '') {
+		echo " <dc:format>" . htmlspecialchars($filetype, ENT_XML1, 'UTF-8') . "</dc:format>\n";
+	}
+	if ($filesize > 0) {
+		echo " <dcterms:extent>" . formatSizeUnits($filesize) . "</dcterms:extent>\n";
+	}
+
+	$clean_summary = trim(strip_tags($an));
+	$summary_text = $clean_summary;
+	if ($sq != '') {
+		$summary_text .= ($summary_text ? "\n\n" : "") . $sq;
+	}
+	if ($keywords != '') {
+		$summary_text .= ($summary_text ? "\n" : "") . "Теги: $keywords";
+	}
+	if ($year > 0) {
+		$summary_text .= ($summary_text ? "\n" : "") . "Год: $year";
+	}
+	if ($filesize > 0) {
+		$summary_text .= ($summary_text ? "\n" : "") . "Размер: " . formatSizeUnits($filesize);
+	}
+	echo " <summary type='text'>" . htmlspecialchars($summary_text, ENT_XML1, 'UTF-8') . "</summary>\n";
+
+	echo " <link rel='http://opds-spec.org/image/thumbnail' href='" . htmlspecialchars($webroot . "/extract_cover.php?id=" . $bookid, ENT_QUOTES, 'UTF-8') . "' type='image/jpeg'/>\n";
+	echo " <link rel='http://opds-spec.org/image' href='" . htmlspecialchars($webroot . "/extract_cover.php?id=" . $bookid, ENT_QUOTES, 'UTF-8') . "' type='image/jpeg'/>\n";
+
+	$ur = ($filetype === 'fb2') ? 'fb2' : 'usr';
+	$mime = get_book_mime_type($filetype);
+	$dl_title = "Скачать " . strtoupper($filetype);
+	echo " <link href='" . htmlspecialchars($webroot . "/$ur.php?id=" . $bookid, ENT_QUOTES, 'UTF-8') . "' rel='http://opds-spec.org/acquisition/open-access' type='$mime' title='" . htmlspecialchars($dl_title, ENT_QUOTES, 'UTF-8') . "' />\n";
+
+	if ($filetype === 'fb2') {
+		echo " <link href='" . htmlspecialchars($webroot . "/$ur.php?id=" . $bookid, ENT_QUOTES, 'UTF-8') . "' rel='http://opds-spec.org/acquisition/open-access' type='application/fb2+zip' title='Скачать FB2.ZIP' />\n";
+	}
+
+	echo " <link href='" . htmlspecialchars($webroot . "/book/view/" . $bookid, ENT_QUOTES, 'UTF-8') . "' rel='alternate' type='text/html' title='Книга на сайте' />\n";
 	echo "</entry>\n";
 }
