@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+# Поддержка запуска в фоне: ./getcovers.sh -d или ./getcovers.sh --background
+if [ "$1" = "-d" ] || [ "$1" = "--background" ] || [ "$1" = "bg" ]; then
+    LOG_FILE="getcovers.log"
+    echo "Запуск getcovers.sh в фоне..."
+    nohup "$0" __bg_exec > "$LOG_FILE" 2>&1 &
+    PID=$!
+    echo "Скрипт запущен в фоне с PID $PID."
+    echo "Лог пишется в $LOG_FILE"
+    echo "Для наблюдения за прогрессом выполните: tail -f $LOG_FILE"
+    exit 0
+fi
+
 # Загружаем настройки из .env если файл существует
 if [ -f ".env" ]; then
     set -a
