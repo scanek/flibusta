@@ -130,7 +130,7 @@ if ($result && !empty($result->filename)) {
     $filename = trim("$id.$type");
 }
 
-if ($zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {
+if ($zip->open(BOOKS_PATH . $zip_name)) {
 	$f = $zip->getFromName("$filename");
 }
 

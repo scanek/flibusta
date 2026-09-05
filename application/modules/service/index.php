@@ -28,7 +28,7 @@ function get_ds($path){
 
 if (!$status_import) {
 	$cache_size = get_ds("/application/cache/covers") + get_ds("/application/cache/authors");
-	$books_size = round(get_ds("/application/flibusta") / 1024, 1);
+	$books_size = round(get_ds(rtrim(BOOKS_PATH, '/\\')) / 1024, 1);
 	$qtotal = $dbh->query("SELECT (SELECT MAX(time) FROM libbook) mmod, (SELECT COUNT(*) FROM libbook) bcnt, (SELECT COUNT(*) FROM libbook WHERE deleted='0') bdcnt");
 	$qtotal->execute();
 	$total = $qtotal->fetch();
@@ -108,7 +108,7 @@ if ($status_import) {
 <p>
 Чтобы отображались фото авторов и обложек для форматов, отличных от FB2, необходимо разместить в каталоге cache файлы архивов lib.a.attached.zip и lib.b.attached.zip соответственно.
 В кэше хранятся распакованные фото авторов и обложек для FB2, а также их уменьшенные версии.</p>
-<p>Файлы архивов Флибусты (*.zip) необходимо размещать в каталоге Flibusta.Net. Обрабатываются также файлы ежедневных обновлений, но обязательно необходимо подгружать свежие SQL файлы.</p>
+<p>Файлы архивов Флибусты (*.zip) размещаются в каталоге книги (по умолчанию <code>Flibusta.Net</code> на хосте, настраивается через <code>BOOKS_DIR</code> в <code>.env</code>). Обрабатываются также файлы ежедневных обновлений, но обязательно необходимо подгружать свежие SQL файлы.</p>
 <?php echo "<p>Доступен также OPDS-каталог для читалок: <a href='$webroot/opds/'>/opds/</a></p>"; ?>
 <p><b>Каталоги FlibustaSQL, cache и их подкаталоги должны иметь права на запись для контейнера. Скрипты в каталоге /application/tools/ должны иметь права на выполнение.</b></p>
 </div></div></div></div>

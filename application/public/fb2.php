@@ -44,7 +44,7 @@ if (!$zip_row) {
 $zip_name = $zip_row->filename;
 $zip = new ZipArchive();
 
-if ($zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {
+if ($zip->open(BOOKS_PATH . $zip_name)) {
 	$book_title = isset($book->booktitle) ? $book->booktitle : (isset($book->BookTitle) ? $book->BookTitle : 'Book');
 	$filename = ($book->author_name ? $book->author_name . " - " : "") . $book_title . " " . $id . ".fb2";
 	header('Content-Description: File Transfer');

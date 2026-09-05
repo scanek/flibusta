@@ -14,6 +14,7 @@ services:
            - FLIBUSTA_DBTYPE=postgres
            - FLIBUSTA_DBHOST=postgresdb
            - FLIBUSTA_DBPASSWORD_FILE=/run/secrets/FLIBUSTA_PWD
+           - FLIBUSTA_BOOKS_DIR=/application/flibusta
            - POSTGRES_ADMIN_USER=postgres
            - POSTGRES_ADMIN_DBPASSWORD_FILE=/run/secrets/POSTGRES_ADMIN_PWD
            - DB_HOST_PINGS=3
@@ -25,7 +26,7 @@ services:
         volumes:
             - './application:/application'
             - './cache:/application/cache'
-            - './Flibusta.Net:/application/flibusta'
+            - '${BOOKS_DIR:-./Flibusta.Net}:/application/flibusta'
             - './FlibustaSQL:/application/sql'
             - './phpdocker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/local-custom.ini'
             - './phpdocker/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-php-fpm.conf'

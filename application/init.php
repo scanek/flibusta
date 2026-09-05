@@ -1,5 +1,8 @@
 <?php
 define('ROOT_PATH', '/application/');
+$books_dir = getenv('FLIBUSTA_BOOKS_DIR') ?: (getenv('BOOKS_DIR') ?: (ROOT_PATH . 'flibusta'));
+define('BOOKS_PATH', rtrim($books_dir, '/\\') . '/');
+
 define('RECORDS_PAGE', 10);
 define('BOOKS_PAGE', 10);
 define('AUTHORS_PAGE', 50);

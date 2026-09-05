@@ -46,7 +46,7 @@ $zip_name = $zip_row ? $zip_row->filename : '';
 $zip = new ZipArchive(); 
 
 echo "<div id='reader' class='reader'>";
-if ($zip_name && $zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {
+if ($zip_name && $zip->open(BOOKS_PATH . $zip_name)) {
 	if ($ext == 'fb2') {
 		include('fb.php');
 	}

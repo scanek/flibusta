@@ -21,7 +21,7 @@
    cp .env.example .env
    ```
 4. Разместить файлы дампа Флибусты (`*.sql` или `*.sql.gz`) в каталог `FlibustaSQL/` (или скачать через `./getsql.sh`).
-5. Разместить архивы книг (`f.fb2.*.zip`, `f.n.*.zip`) в каталоге `Flibusta.Net/` (или использовать `./update_daily.sh`).
+5. Разместить архивы книг (`f.fb2.*.zip`, `f.n.*.zip`) в каталоге `Flibusta.Net/` (или в любой другой папке на диске, указав её путь в `BOOKS_DIR` в файле `.env`). Для скачивания свежих книг можно использовать `./update_daily.sh`.
 6. Собрать и запустить контейнеры:
    ```bash
    docker compose build
@@ -31,17 +31,18 @@
    Доступен также OPDS-каталог для читалок: `http://localhost:27100/opds/`
 8. Выполнить "Обновление базы" через пункт меню "Сервис" (или выполнить `docker compose exec php-fpm /application/tools/app_import_sql.sh`).
 
-> Каталоги `FlibustaSQL`, `cache`, `Flibusta.Net` должны иметь права на запись для контейнера (`chown -R 82:82 cache FlibustaSQL`). Скрипты в каталоге `/application/tools/` должны иметь права на выполнение (`chmod +x`).
+> Каталоги `FlibustaSQL`, `cache`, папка с книгами `BOOKS_DIR` должны иметь права на запись для контейнера (`chown -R 82:82 cache FlibustaSQL`). Скрипты в каталоге `/application/tools/` должны иметь права на выполнение (`chmod +x`).
 
 ## Переменные окружения (.env):
 
 Все основные параметры настраиваются в файле `.env` (см. `.env.example`):
 
+* `BOOKS_DIR` — путь к папке с архивами книг на хосте (по умолчанию `./Flibusta.Net`). Можно указать внешний диск или сетевую папку (например, `/mnt/storage/books` или `D:/Books/flibusta`).
 * `WEB_PORT` — внешний порт веб-сервера (по умолчанию `27100`).
 * `PG_PORT` — внешний порт PostgreSQL (по умолчанию `27101`).
 * `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — реквизиты базы данных.
 * `SERVICE_PASSWORD` — пароль для защиты раздела `/service/` (обновление БД, очистка кэша). Если пустой — авторизация отключена.
-* `BOOKS_DIR`, `SQL_DIR`, `CACHE_DIR` — пути к директориям книг, дампов и кэша на хосте.
+* `SQL_DIR`, `CACHE_DIR` — пути к директориям дампов и кэша на хосте.
 * `FLIBUSTA_SQL_URL`, `FLIBUSTA_DAILY_URL` — адреса зеркал для скачивания дампов и ежедневных обновлений.
 
 

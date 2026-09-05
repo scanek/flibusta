@@ -2,7 +2,10 @@
 error_reporting(E_ALL);
 include('../dbinit.php');
 
-if ($handle = opendir('/application/flibusta')) {
+$books_dir = getenv('FLIBUSTA_BOOKS_DIR') ?: (getenv('BOOKS_DIR') ?: '/application/flibusta');
+$books_dir = rtrim($books_dir, '/\\');
+
+if ($handle = opendir($books_dir)) {
 	$stmt = $dbh->prepare("TRUNCATE book_zip;");
 	$stmt->execute();
 
