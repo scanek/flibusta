@@ -77,7 +77,7 @@ $stmt->bindParam(":letter", $letter);
 $stmt->execute();
 
 echo "<div class='d-flex justify-content-between align-items-center mb-3'>";
-echo "<span class='badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2'><i class='fas fa-user-pen me-1'></i> Найдено авторов: " . number_format($cnt, 0, '.', ' ') . "</span>";
+echo "<span class='badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2'><i class='fas fa-user-edit me-1'></i> Найдено авторов: " . number_format($cnt, 0, '.', ' ') . "</span>";
 echo "</div>";
 
 show_gpager(ceil($cnt / AUTHORS_PAGE), 5);

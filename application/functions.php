@@ -63,13 +63,11 @@ function render_book_cover($book, $webroot = '', $size = 'small') {
 	$color_idx = $book_id % 6;
 	$title = htmlspecialchars($book->title ?? 'Без названия', ENT_QUOTES);
 	$type = strtoupper(htmlspecialchars($book->filetype ?? 'FB2', ENT_QUOTES));
-	$fallback_html = "<div class=\'cover-fallback cover-fallback-$color_idx\'>" .
-		"<span class=\'fallback-badge\'>$type</span>" .
-		"<div class=\'fallback-title\'>$title</div>" .
-		"</div>";
-
 	$img_url = "$webroot/extract_cover.php?id=$book_id" . ($size == 'small' ? '&small' : '');
-	return "<img class='book-img' src='$img_url' alt='$title' loading='lazy' onerror=\"this.outerHTML='" . $fallback_html . "';\" />";
+
+	$html = "<img class='book-img' src='$img_url' alt='$title' loading='lazy' onerror=\"this.style.display='none'; var f=this.nextElementSibling; if(f) f.style.display='flex';\" />";
+	$html .= "<div class='cover-fallback cover-fallback-$color_idx' style='display:none;'><span class='fallback-badge'>$type</span><div class='fallback-title'>$title</div></div>";
+	return $html;
 }
 
 function book_small_pg($book, $webroot = '', $full = false) {
@@ -151,7 +149,7 @@ function book_info_pg($book, $webroot = '', $full = false) {
 		echo "<div class='book-detail-hero' itemscope itemtype='http://schema.org/Book'>";
 		echo "<div class='row g-4'>";
 		echo "<div class='col-md-4 col-lg-3 text-center text-md-start'>";
-		echo "<div class='cover-wrapper mx-auto mx-md-0' style='max-width: 240px; aspect-ratio: 1/1.5; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-cover);'>";
+		echo "<div class='cover-wrapper mx-auto mx-md-0' style='max-width: 240px; aspect-ratio: 2/3; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-cover); position: relative;'>";
 		echo $cover_img;
 		echo "</div>";
 		echo "</div>";
@@ -190,14 +188,19 @@ function book_info_pg($book, $webroot = '', $full = false) {
 
 	echo "<div class='book-card' itemscope itemtype='http://schema.org/Book'>";
 	echo "<div class='cover-wrapper'>";
-	echo "<a href='$webroot/book/view/$book_id'>$cover_img</a>";
+	echo "<a href='$webroot/book/view/$book_id' class='cover-link' title='$title'>$cover_img</a>";
 	echo "</div>";
 
 	echo "<div class='book-body'>";
 	echo "<a class='book-title' href='$webroot/book/view/$book_id' title='$title'>$title</a>";
 	echo "<div class='book-author' title='$authors_short'>$authors_short</div>";
 
-	echo "<div class='book-meta-tags d-flex flex-wrap gap-1 mb-1'>$genres_html $seq_html</div>";
+	if (!empty($seq_html)) {
+		echo "<div class='book-series mb-1'>$seq_html</div>";
+	}
+	if (!empty($genres_html)) {
+		echo "<div class='book-genres mb-1'>$genres_html</div>";
+	}
 	if (!empty($annotation_short)) {
 		echo "<div class='book-annotation text-muted'>$annotation_short</div>";
 	}
@@ -206,12 +209,12 @@ function book_info_pg($book, $webroot = '', $full = false) {
 	echo "<div class='d-flex align-items-center gap-1'>";
 	echo "<span class='badge bg-secondary-subtle text-secondary badge-format'>" . strtoupper($ft) . "</span>";
 	if (!empty($year)) {
-		echo "<span class='text-muted' style='font-size: 0.75rem;'>$year</span>";
+		echo "<span class='text-muted book-year ms-1' style='font-size: 0.75rem;'>$year</span>";
 	}
 	echo "</div>";
 
 	echo "<div class='btn-group btn-group-sm'>";
-	echo "<a href='$fhref' class='btn btn-outline-primary btn-sm' title='Скачать'><i class='fas fa-download'></i></a>";
+	echo "<a href='$fhref' class='btn btn-outline-primary btn-sm' title='Скачать " . strtoupper($ft) . "'><i class='fas fa-download'></i></a>";
 	echo $fav_btn;
 	echo "</div>";
 	echo "</div>"; // book-footer

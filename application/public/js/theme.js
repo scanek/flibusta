@@ -52,37 +52,45 @@
         const listBtn = document.getElementById('view-mode-list');
 
         function setCatalogView(mode) {
-            if (!catalogContainer) return;
-            if (mode === 'list') {
-                catalogContainer.classList.remove('books-grid');
-                catalogContainer.classList.add('books-list');
-                if (gridBtn) gridBtn.classList.remove('active');
-                if (listBtn) listBtn.classList.add('active');
-            } else {
-                catalogContainer.classList.remove('books-list');
-                catalogContainer.classList.add('books-grid');
-                if (gridBtn) gridBtn.classList.add('active');
-                if (listBtn) listBtn.classList.remove('active');
+            if (catalogContainer) {
+                if (mode === 'list') {
+                    catalogContainer.classList.remove('books-grid');
+                    catalogContainer.classList.add('books-list');
+                } else {
+                    catalogContainer.classList.remove('books-list');
+                    catalogContainer.classList.add('books-grid');
+                }
+            }
+            if (gridBtn && listBtn) {
+                if (mode === 'list') {
+                    gridBtn.classList.remove('active', 'btn-primary');
+                    gridBtn.classList.add('btn-outline-secondary');
+                    listBtn.classList.remove('btn-outline-secondary');
+                    listBtn.classList.add('active', 'btn-primary');
+                } else {
+                    gridBtn.classList.remove('btn-outline-secondary');
+                    gridBtn.classList.add('active', 'btn-primary');
+                    listBtn.classList.remove('active', 'btn-primary');
+                    listBtn.classList.add('btn-outline-secondary');
+                }
             }
             localStorage.setItem(VIEW_KEY, mode);
         }
 
-        if (catalogContainer) {
-            const savedView = localStorage.getItem(VIEW_KEY) || 'grid';
-            setCatalogView(savedView);
+        const savedView = localStorage.getItem(VIEW_KEY) || 'grid';
+        setCatalogView(savedView);
 
-            if (gridBtn) {
-                gridBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    setCatalogView('grid');
-                });
-            }
-            if (listBtn) {
-                listBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    setCatalogView('list');
-                });
-            }
+        if (gridBtn) {
+            gridBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setCatalogView('grid');
+            });
+        }
+        if (listBtn) {
+            listBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setCatalogView('list');
+            });
         }
 
         // 3. Reader Controls (if reader is present on page)

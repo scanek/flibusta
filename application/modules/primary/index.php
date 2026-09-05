@@ -243,7 +243,7 @@ if (COUNT_BOOKS) {
 	$stt->execute();
 	$cnt = $stt->fetch()->cnt;
 	echo "<div class='d-flex justify-content-between align-items-center mb-3'>";
-	echo "<span class='badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2'><i class='fas fa-books me-1'></i> Найдено: " . number_format($cnt, 0, '.', ' ') . "</span>";
+	echo "<span class='badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2'><i class='fas fa-book me-1'></i> Найдено: " . number_format($cnt, 0, '.', ' ') . "</span>";
 	echo "</div>";
 } else {
 	$cnt = 2000;

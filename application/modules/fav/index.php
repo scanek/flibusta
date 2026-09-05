@@ -25,7 +25,7 @@ try {
 	$fav_authors = $stmt->fetchAll();
 	if (!empty($fav_authors)) {
 		echo "<div class='card border-0 shadow-sm rounded-4 p-3 mb-4'>";
-		echo "<h5 class='fw-bold mb-3 text-muted'><i class='fas fa-user-pen me-2'></i> Избранные авторы</h5>";
+		echo "<h5 class='fw-bold mb-3 text-muted'><i class='fas fa-user-edit me-2'></i> Избранные авторы</h5>";
 		echo "<div class='d-flex flex-wrap gap-2'>";
 		foreach ($fav_authors as $a) {
 			$name = trim("$a->lastname $a->firstname $a->middlename $a->nickname");

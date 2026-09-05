@@ -18,10 +18,19 @@ include_once(ROOT_PATH . 'webroot.php');
 <link rel="icon" href="<?php echo $webroot; ?>/favicon.svg" sizes="any" type="image/svg+xml">
 <link href="<?php echo $webroot; ?>/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 <link href="<?php echo $webroot; ?>/css/all.min.css" rel="stylesheet">
-<link href="<?php echo $webroot; ?>/css/style.css" rel="stylesheet">
+<link href="<?php echo $webroot; ?>/css/style.css?v=2" rel="stylesheet">
 
-<script src="<?php echo $webroot; ?>/public/js/theme.js" defer></script>
-<script src="<?php echo $webroot; ?>/bootstrap/js/bootstrap.bundle.min.js" defer></script>
+<script>
+// Apply saved theme immediately to avoid flash of white/dark
+(function() {
+  var t = localStorage.getItem('flibusta_theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-bs-theme', t);
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+
+<script src="<?php echo $webroot; ?>/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo $webroot; ?>/js/theme.js?v=2"></script>
 </head>
 
 <?php
@@ -73,7 +82,7 @@ switch ($url->mod) {
           <a class="nav-link" href="<?php echo $webroot; ?>/genres/"><i class="fas fa-tags me-1"></i> Жанры</a>
         </li>
         <li class="nav-item <?php echo $c4; ?>">
-          <a class="nav-link" href="<?php echo $webroot; ?>/authors/"><i class="fas fa-user-pen me-1"></i> Авторы</a>
+          <a class="nav-link" href="<?php echo $webroot; ?>/authors/"><i class="fas fa-user-edit me-1"></i> Авторы</a>
         </li>
         <li class="nav-item <?php echo $c3; ?>">
           <a class="nav-link" href="<?php echo $webroot; ?>/series/"><i class="fas fa-layer-group me-1"></i> Серии</a>
@@ -82,7 +91,7 @@ switch ($url->mod) {
           <a class="nav-link" href="<?php echo $webroot; ?>/fav/"><i class="fas fa-bookmark me-1"></i> Полка</a>
         </li>
         <li class="nav-item <?php echo $c6; ?>">
-          <a class="nav-link" href="<?php echo $webroot; ?>/service/"><i class="fas fa-sliders me-1"></i> Сервис</a>
+          <a class="nav-link" href="<?php echo $webroot; ?>/service/"><i class="fas fa-sliders-h me-1"></i> Сервис</a>
         </li>
       </ul>
 
