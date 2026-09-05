@@ -36,17 +36,20 @@ function lastm($path) {
 
 $small = isset($_GET['small']);
 
+$id = 0;
 if (isset($_GET['id'])) {
-	$id = $_GET['id'];
-} else {
-	if (isset($_GET['sid'])) {
-		$id = $_GET['sid'];
-		$small = true;
-	}
+	$id = intval($_GET['id']);
+} else if (isset($_GET['sid'])) {
+	$id = intval($_GET['sid']);
+	$small = true;
 }
 $iid = $id;
 
 header("Content-type: image/jpeg");
+
+if ($id <= 0) {
+	die();
+}
 
 if ($small) {
 	if (file_exists(ROOT_PATH . "cache/covers/$id-small.jpg")) {
@@ -60,26 +63,27 @@ if ($small) {
 	}
 }
 
-$stmt = $dbh->prepare("SELECT file FROM libbpics WHERE BookId=$id");
+$stmt = $dbh->prepare("SELECT file FROM libbpics WHERE BookId=:id");
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);
 $stmt->execute();
 $f = $stmt->fetch();
 
-if (isset($f->file)) {
+if ($f && isset($f->file)) {
 	$zip = new ZipArchive(); 
 	if ($zip->open(ROOT_PATH . "cache/lib.b.attached.zip")) {
-		$f = $zip->getFromName($f->file);
-		if (strlen($f) > 0) {
-			file_put_contents(ROOT_PATH . "cache/covers/$id.jpg", $f);
-			$thm = resizeCover($f, 300, 400);
+		$f_data = $zip->getFromName($f->file);
+		if ($f_data !== false && strlen($f_data) > 0) {
+			file_put_contents(ROOT_PATH . "cache/covers/$id.jpg", $f_data);
+			$thm = resizeCover($f_data, 300, 400);
 			imagejpeg($thm, ROOT_PATH . "cache/covers/$id-small.jpg", 75);
 			imagedestroy($thm);
 			if ($small) {
 				if (file_exists(ROOT_PATH . "cache/covers/$id-small.jpg")) {
 					lastm(ROOT_PATH . "cache/covers/$id-small.jpg");
-				die();
+					die();
 				}
 			} else {
-				echo $f;
+				echo $f_data;
 				die();
 			}
 		}
@@ -88,29 +92,42 @@ if (isset($f->file)) {
 }
 
 
-$stmt = $dbh->prepare("SELECT filetype FROM libbook WHERE bookid=$id LIMIT 1");
+$stmt = $dbh->prepare("SELECT filetype FROM libbook WHERE bookid=:id LIMIT 1");
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);
 $stmt->execute();
-$type = trim($stmt->fetch()->filetype);
+$book_res = $stmt->fetch();
+if (!$book_res) {
+	echo file_get_contents('/application/none.jpg');
+	die();
+}
+$type = trim($book_res->filetype);
 if ($type == 'fb2') {
-	$u = '0';
+	$u = 0;
 } else {
-	$u = '1';
+	$u = 1;
 }
 
-$stmt = $dbh->prepare("SELECT * FROM book_zip WHERE $id BETWEEN start_id AND end_id AND usr=$u");
+$stmt = $dbh->prepare("SELECT filename FROM book_zip WHERE :id BETWEEN start_id AND end_id AND usr=:usr LIMIT 1");
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);
+$stmt->bindValue(':usr', $u, PDO::PARAM_INT);
 $stmt->execute();
-$zip_name = $stmt->fetch()->filename;
+$zip_row = $stmt->fetch();
+if (!$zip_row) {
+	echo file_get_contents('/application/none.jpg');
+	die();
+}
+$zip_name = $zip_row->filename;
 $zip = new ZipArchive(); 
 
-$result = $dbh->query("SELECT filename FROM libfilename where BookId=$id")->fetch();
+$stmt = $dbh->prepare("SELECT filename FROM libfilename WHERE BookId=:id LIMIT 1");
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);
+$stmt->execute();
+$result = $stmt->fetch();
 
-if ($result) {
+if ($result && !empty($result->filename)) {
     $filename = $result->filename;
 } else {
-    $filename = null;
-}
-if ($filename == '') {
-	$filename = trim("$id.$type");
+    $filename = trim("$id.$type");
 }
 
 if ($zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {

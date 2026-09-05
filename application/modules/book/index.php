@@ -33,19 +33,20 @@ function str_replace_first($from, $to, $content) {
 }
 
 
-$ext = strtolower(trim($book->filetype));
+$ext = strtolower(trim($book->filetype ?? ''));
+$book_id = intval($url->var1);
+$usr = ($ext == 'fb2') ? 0 : 1;
 
-if ($ext == 'fb2') {
-	$stmt = $dbh->prepare("SELECT * FROM book_zip WHERE $url->var1 BETWEEN start_id AND end_id AND usr=0");
-} else {
-	$stmt = $dbh->prepare("SELECT * FROM book_zip WHERE $url->var1 BETWEEN start_id AND end_id AND usr=1");
-}
+$stmt = $dbh->prepare("SELECT filename FROM book_zip WHERE :id BETWEEN start_id AND end_id AND usr=:usr LIMIT 1");
+$stmt->bindValue(':id', $book_id, PDO::PARAM_INT);
+$stmt->bindValue(':usr', $usr, PDO::PARAM_INT);
 $stmt->execute();
-$zip_name = $stmt->fetch()->filename;
+$zip_row = $stmt->fetch();
+$zip_name = $zip_row ? $zip_row->filename : '';
 $zip = new ZipArchive(); 
 
 echo "<div id='reader' class='reader'>";
-if ($zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {
+if ($zip_name && $zip->open(ROOT_PATH . "flibusta/" . $zip_name)) {
 	if ($ext == 'fb2') {
 		include('fb.php');
 	}

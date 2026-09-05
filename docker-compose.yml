@@ -1,51 +1,61 @@
-version: '3.1'
 services:
     postgres:
         build: phpdocker/pg
+        container_name: flibusta_postgres
+        restart: unless-stopped
         working_dir: /application
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-flibusta}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flibusta}
+            POSTGRES_DB: ${POSTGRES_DB:-flibusta}
         volumes:
             - 'db-data:/var/lib/postgresql/data'
             - './application:/application'
-        environment:
-            - POSTGRES_USER=flibusta
-            - POSTGRES_PASSWORD=flibusta
-            - POSTGRES_DB=flibusta
         ports:
-            - '27101:5432'
-
-    webserver:
-        image: 'nginx:alpine'
-        working_dir: /application
-        volumes:
-            - './application:/application'
-            - './cache:/application/cache'
-            - './Flibusta.Net:/application/flibusta'
-            - './phpdocker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf'
-        ports:
-            - '27100:80'
+            - '${PG_PORT:-27101}:5432'
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flibusta} -d ${POSTGRES_DB:-flibusta}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
     php-fpm:
         build: phpdocker/php-fpm
+        container_name: flibusta_php
+        restart: unless-stopped
         working_dir: /application
+        depends_on:
+            postgres:
+                condition: service_healthy
         volumes:
             - './application:/application'
-            - './cache:/application/cache'
-            - './Flibusta.Net:/application/flibusta'
-            - './FlibustaSQL:/application/sql'
+            - '${CACHE_DIR:-./cache}:/application/cache'
+            - '${BOOKS_DIR:-./Flibusta.Net}:/application/flibusta'
+            - '${SQL_DIR:-./FlibustaSQL}:/application/sql'
             - './phpdocker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/local-custom.ini'
             - './phpdocker/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-php-fpm.conf'
         environment:
-            - FLIBUSTA_DBUSER=flibusta
-            - FLIBUSTA_DBNAME=flibusta
-            - FLIBUSTA_DBTYPE=postgres
-            - FLIBUSTA_DBHOST=postgres
-            - FLIBUSTA_DBPASSWORD_FILE=/run/secrets/FLIBUSTA_PWD
-        secrets:
-            - FLIBUSTA_PWD
+            FLIBUSTA_DBUSER: ${POSTGRES_USER:-flibusta}
+            FLIBUSTA_DBNAME: ${POSTGRES_DB:-flibusta}
+            FLIBUSTA_DBPASSWORD: ${POSTGRES_PASSWORD:-flibusta}
+            FLIBUSTA_DBHOST: postgres
+            FLIBUSTA_DBTYPE: postgres
+            SERVICE_PASSWORD: ${SERVICE_PASSWORD:-}
 
+    webserver:
+        image: 'nginx:alpine'
+        container_name: flibusta_web
+        restart: unless-stopped
+        working_dir: /application
+        depends_on:
+            - php-fpm
+        volumes:
+            - './application:/application'
+            - '${CACHE_DIR:-./cache}:/application/cache'
+            - '${BOOKS_DIR:-./Flibusta.Net}:/application/flibusta'
+            - './phpdocker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf'
+        ports:
+            - '${WEB_PORT:-27100}:80'
 
 volumes:
     db-data:
-secrets:
-    FLIBUSTA_PWD:
-        file: ./secrets/flibusta_pwd.txt

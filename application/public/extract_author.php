@@ -17,7 +17,7 @@ function lastm($path) {
 }
 
 if (isset($_GET['id'])) {
-	$id = $_GET['id'];
+	$id = intval($_GET['id']);
 } else {
 	$id = 0;
 }
@@ -25,22 +25,27 @@ $iid = $id;
 
 header("Content-type: image/jpeg");
 
+if ($id <= 0) {
+	die();
+}
+
 if (file_exists(ROOT_PATH . "cache/authors/$id.jpg")) {
 	lastm(ROOT_PATH . "cache/authors/$id.jpg");
 	die();
 }
 
-$stmt = $dbh->prepare("SELECT file FROM libapics WHERE AvtorId=$id");
+$stmt = $dbh->prepare("SELECT file FROM libapics WHERE AvtorId=:id");
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);
 $stmt->execute();
 $f = $stmt->fetch();
 
-if (isset($f->file)) {
+if ($f && isset($f->file)) {
 	$zip = new ZipArchive(); 
 	if ($zip->open(ROOT_PATH . "cache/lib.a.attached.zip")) {
-		$f = $zip->getFromName($f->file);
-		if (strlen($f) > 0) {
-			file_put_contents(ROOT_PATH . "cache/authors/$id.jpg", $f);
-			echo $f;
+		$f_content = $zip->getFromName($f->file);
+		if ($f_content !== false && strlen($f_content) > 0) {
+			file_put_contents(ROOT_PATH . "cache/authors/$id.jpg", $f_content);
+			echo $f_content;
 			die();
 		}
 	}

@@ -1,4 +1,15 @@
 
+<?php
+$service_password = getenv('SERVICE_PASSWORD');
+if (!empty($service_password)) {
+	if (!isset($_SERVER['PHP_AUTH_PW']) || $_SERVER['PHP_AUTH_PW'] !== $service_password) {
+		header('WWW-Authenticate: Basic realm="Flibusta Service Area"');
+		header('HTTP/1.0 401 Unauthorized');
+		echo '<div class="alert alert-danger m-3">Доступ ограничен. Требуется авторизация в сервисной панели.</div>';
+		return;
+	}
+}
+?>
 <div class='row'>
 <div class="col-sm-6">
 <div class='card'>
