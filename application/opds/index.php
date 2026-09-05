@@ -1,7 +1,20 @@
 <?php
+ini_set('display_errors', '0');
 if (ob_get_length()) {
 	ob_clean();
 }
+
+$is_opds_browser = !empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'text/html');
+
+function opds_header($webroot) {
+	global $is_opds_browser;
+	header('Content-Type: application/atom+xml; charset=utf-8');
+	echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+	if ($is_opds_browser) {
+		echo '<?xml-stylesheet type="text/xsl" href="' . htmlspecialchars($webroot . '/opds.xsl', ENT_QUOTES, 'UTF-8') . '"?>' . "\n";
+	}
+}
+
 switch ($url->action) {
 	case 'list':
 		include('list.php');

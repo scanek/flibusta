@@ -1,13 +1,15 @@
 <?php
-header('Content-Type: application/atom+xml; charset=utf-8');
-
 $letters = preg_replace('/[^A-Za-zА-Яа-яЁё0-9]/u', '', $_GET['letters'] ?? '');
 $length_letters = mb_strlen($letters, 'UTF-8');
 
-echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
-echo '<?xml-stylesheet type="text/xsl" href="' . htmlspecialchars($webroot . '/opds.xsl', ENT_QUOTES, 'UTF-8') . '"?>' . "\n";
+if (function_exists('opds_header')) {
+	opds_header($webroot);
+} else {
+	header('Content-Type: application/atom+xml; charset=utf-8');
+	echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+}
 echo <<< _XML
- <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="https://specs.opds.io/opds-1.2">
+ <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="http://opds-spec.org/2010/catalog">
  <id>tag:root:authors</id>
  <title>Книги по авторам</title>
  <updated>$cdt</updated>

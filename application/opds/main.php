@@ -1,10 +1,12 @@
 <?php
-header('Content-Type: application/atom+xml; charset=utf-8');
-echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
-echo '<?xml-stylesheet type="text/xsl" href="' . htmlspecialchars($webroot . '/opds.xsl', ENT_QUOTES, 'UTF-8') . '"?>' . "\n";
+if (function_exists('opds_header')) {
+	opds_header($webroot);
+} else {
+	header('Content-Type: application/atom+xml; charset=utf-8');
+	echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+}
 echo <<< _XML
- 
-<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="https://specs.opds.io/opds-1.2">
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:os="http://a9.com/-/spec/opensearch/1.1/" xmlns:opds="http://opds-spec.org/2010/catalog">
  <id>tag:root</id>
  <title>Домашняя библиотека</title>
  <icon>/favicon.ico</icon>
@@ -42,9 +44,8 @@ echo <<< _XML
 <entry> <updated>$cdt</updated>
  <id>tag:root:sequences</id>
  <title>По сериям</title>
- <content type="text">Поиск книг по сериям</content>
- <link href="$webroot/opds/sequencesindex" type="application/atom+xml;profile=opds-catalog" />
-</entry>
-_XML 
-?>
+  <content type="text">Поиск книг по сериям</content>
+  <link href="$webroot/opds/sequencesindex" type="application/atom+xml;profile=opds-catalog" />
+ </entry>
 </feed>
+_XML;
