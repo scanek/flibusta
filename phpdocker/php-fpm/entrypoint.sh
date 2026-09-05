@@ -5,7 +5,9 @@ set -e
 
 # Настройка прав на директории и утилиты
 mkdir -p /application/sql /application/cache/authors /application/cache/covers /application/cache/tmp
+touch /application/sql/sync.log /application/sql/status 2>/dev/null || true
 chmod -R 777 /application/sql /application/cache 2>/dev/null || true
+chown -R www-data:www-data /application/sql /application/cache 2>/dev/null || true
 chmod +x /application/tools/*.sh /application/tools/app_topg 2>/dev/null || true
 
 # Ожидание готовности PostgreSQL

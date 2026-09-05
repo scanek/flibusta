@@ -119,13 +119,15 @@ mkdir -p "${SQL_DIR:-./FlibustaSQL}"
 mkdir -p "${CACHE_DIR:-./cache}/covers"
 mkdir -p "${CACHE_DIR:-./cache}/authors"
 mkdir -p "${CACHE_DIR:-./cache}/tmp"
+touch "${SQL_DIR:-./FlibustaSQL}/sync.log" "${SQL_DIR:-./FlibustaSQL}/status" 2>/dev/null || true
 
 chmod +x *.sh 2>/dev/null || true
 chmod +x application/tools/*.sh 2>/dev/null || true
 chmod +x application/tools/app_topg 2>/dev/null || true
 sed -i 's/\r$//' *.sh application/tools/*.sh application/tools/app_topg .env* 2>/dev/null || true
 
-# Попытка выставить права на запись для www-data (UID 82 в alpine), если запуск с root
+# Выставляем полные права на запись для кэша и каталога SQL
+chmod -R 777 "${CACHE_DIR:-./cache}" "${SQL_DIR:-./FlibustaSQL}" 2>/dev/null || true
 if [ "$(id -u)" -eq 0 ]; then
     chown -R 82:82 "${CACHE_DIR:-./cache}" "${SQL_DIR:-./FlibustaSQL}" 2>/dev/null || true
 fi
